@@ -1,0 +1,4983 @@
+openapi: 3.0.3
+info:
+  title: Asset Service
+  version: 2.1.020
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+tags:
+  - name: asset-relationships
+    description: Relationships between assets.
+  - name: assets
+    description: Assets managed by Synack.
+  - name: cloudaccounts
+    description: Cloud account assets.
+  - name: credentials
+    description: Credentials are restricted to authorized users.
+  - name: hosts
+    description: Host assets.
+  - name: listings
+    description: Assets are associated with listings.
+  - name: mobileapps
+    description: Mobile application assets.
+  - name: networks
+    description: Network assets.
+  - name: ports
+    description: Ports for single host assets.
+  - name: scoperules
+    description: Scope-rules provide fine grained control for what is in and out of scope for an asset.
+  - name: scripts
+    description: Scripts for mobile and web applications.
+  - name: userroles
+    description: Defines persona-specific user roles for asset credential management.
+  - name: users
+    description: Users of credentials.
+  - name: webapps
+    description: Web application assets.
+servers:
+  - url: https://{environment}.synack.com/api/asset
+    variables:
+      environment:
+        default: viper.ks-prod # Production GCP
+        enum:
+          - viper.ks-qa # QA GCP
+          - viper.ks-staging # Staging GCP
+          - viper.ks-prod # Production GCP
+  - url: http://localhost:1323/api/asset # local development
+paths:
+  /v2/bulk/assets:
+    post:
+      operationId: postAssetBulk
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Bulk upserts array of assets and listing associations. Checks properties
+        of assets for validity and returns 409 Conflict if rules are violated.
+        Relationships can be upserted using the sourceRelationships property only.
+      requestBody:
+        description: Supply Asset UID for the asset to upsert
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleOrMultiAsset"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleOrMultiAssetResponse"
+        "202":
+          $ref: "#/components/responses/202StatusAccepted"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/bulk/assets/lifecycle-state:update:
+    post:
+      operationId: bulkUpdateAssetLifecycleState
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Bulk updates the asset life cycle property. Checks the validity of assets and returns 409 Conflict if rules are violated.
+      requestBody:
+        description: Supply Organization UID, Asset UIDs for the assets to update, and the lifecycle state to update to.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetBulkLifecycleStateUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/AssetBulkLifecycleStateUpdateResponse"
+        "202":
+          $ref: "#/components/responses/202StatusAccepted"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/bulk/assets/criticality:update:
+    post:
+      operationId: bulkUpdateAssetCriticality
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Bulk update the criticality of multiple assets.
+      requestBody:
+        description: The Organization UID, Asset UIDs to be updated, and the criticality value to be set on the assets.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetBulkCriticalityUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/AssetBulkCriticalityUpdateResponse"
+        "202":
+          $ref: "#/components/responses/202StatusAccepted"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/listings/{listingUid}/assets/{assetUid}:
+    parameters:
+      - $ref: "#/components/parameters/ListingUIDPath"
+      - $ref: "#/components/parameters/AssetUIDPath"
+    put:
+      operationId: putListingAsset
+      tags:
+        - listings
+      description: Upsert assignment of an asset to a listing.
+      requestBody:
+        description: Properties of the assignment of an asset to a listing.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingAsset"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleListingAsset"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_client_lw
+            - asset_boss_ow
+            - asset_boss_lw
+    delete:
+      operationId: deleteListingAsset
+      tags:
+        - listings
+      description: Delete the assignment of an asset to a listing.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/listings/{listingUid}/assets:
+    parameters:
+      - $ref: "#/components/parameters/ListingUIDPath"
+    patch:
+      operationId: patchListingAssets
+      tags:
+        - listings
+      description: Associate or disassociate zero or more assets from a listing.
+        Allows the caller to provide lists of assets to add to and/or remove from
+        being associated with a listing. Unknown assets are ignored.
+      requestBody:
+        description: Asset UIDs to add associations to and/or remove associations from the listing.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkListingAsset"
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_client_lw
+            - asset_boss_ow
+            - asset_boss_lw
+    delete:
+      operationId: deleteListingAssets
+      parameters:
+        - $ref: "#/components/parameters/AssetTypeQuery"
+      tags:
+        - listings
+      description: Delete all the association of assets from a listing.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_boss_ow
+            - asset_boss_lw
+            - asset_client_ow
+            - asset_client_lw
+
+  /v2/organizations/{organizationUid}/listings/{listingUid}/gateways:
+    parameters:
+      - $ref: "#/components/parameters/OrganizationUIDPath"
+      - $ref: "#/components/parameters/ListingUIDPath"
+    patch:
+      operationId: patchListingGateways
+      tags:
+        - listings
+      description: |
+        Associate or disassociate gateway ID from a listing.
+        Allows the caller to provide gateway ID to add to and/or remove from
+        being associated with a listing. Gateway ID equals to `"nil"` would disassociate.
+      requestBody:
+        description: Gateway ID to add or remove from the listing and every asset attached to that listing.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GatewayIDInput"
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_client_lw
+            - asset_boss_ow
+            - asset_boss_lw
+
+  /v2/listings/{listingUid}/reset-scope-rules:
+    parameters:
+      - $ref: "#/components/parameters/ListingUIDPath"
+    put:
+      operationId: putListingAssetsResetScopeRules
+      tags:
+        - listings
+      description: For every asset associated with the listing, reset the scope rules to default rules
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_boss_ow
+            - asset_boss_lw
+
+  /v2/assets:
+    get:
+      operationId: getAssets
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Retrieve the list of assets for one or more organizations, considering
+        filtering and pagination query parameters. When an organization-level
+        OAuth2 scope is provided, the results will be restricted to those
+        organizations the user is authorized for. Similarly, if a listing-
+        level OAuth2 scope is provided, the results will be restricted to those
+        listings the user is authorized for.
+
+        Additional query parameters generally restrict the resulting set of
+        assets according to AND semantics.
+
+        Use of organizationUid and listingUid query parameters will further
+        restrict the results.
+
+        If neither are specified, the returned assets are the set of assets
+        the user is allowed to access with organization OR listing specific
+        privileges.
+
+        If listing UIDs are supplied without organization UIDs, then only the
+        assets assigned to those listings (which the user is authorized for)
+        will be returned. Conversely, if organization UIDs are supplied without
+        listing UIDs, then only the assets owned by those organizations (which
+        the the user is authorized for) will be returned.
+
+        Should both organization UIDs and listing UIDs be supplied, then the set
+        of assets returned is restricted to assets assigned to any of the
+        supplied listings, AND owned by any of the supplied organizations,
+        further restricted to only those the user is authorized to access.
+
+        Researcher users are restricted to only viewing credentials of in scope
+        assets for listings to which they have been assigned.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationUIDQuery"
+        - $ref: "#/components/parameters/ListingUIDQuery"
+        - $ref: "#/components/parameters/AssetTypeQuery"
+        - $ref: "#/components/parameters/HostTypeQuery"
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: >
+            Optional query parameter for a search string that will be used
+            to match within the label or location properties of assets. If
+            this query parameter is provided, any location query parameter
+            will be ignored.
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          required: false
+          description: >
+            Optional parameter that determines whether the response includes
+            assets regardless of active state (the default, if this query
+            parameter is not provided); active assets only if true; or inactive
+            assets only if false.
+        - in: query
+          name: inProduction
+          schema:
+            type: boolean
+          required: false
+          description: >
+            Optional query parameter that determines whether production or
+            non-production assets will be included in the response.
+        - in: query
+          name: maxHostDiscoveryAgeMins
+          schema:
+            type: integer
+            default: 0
+          required: false
+          description: >
+            Optional query parameter to get host assets which are discovered by cloudEnumeration scanner shifted by maxHostDiscoveryAgeMins.
+            Assets which are added via boss or discovered by other type of scanners will be included in response.
+            E.g. CloudEnumeration hosts are valid for 1 hour from each time they are discovered, maxHostDiscoveryAgeMins=0 means that
+            if the end time of the relationship has passed, the asset will not be returned - maxHostDiscoveryAgeMins=60 however, would return assets
+            that were still valid 60 minutes ago
+        - in: query
+          name: scope[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Scope"
+          required: false
+          explode: true
+          description: Restrict the returned assets to only assets associated to listings by the specified scopes.
+        - in: query
+          name: cloudPlatform[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/CloudPlatform"
+          required: false
+          explode: true
+          description: Restrict the returned assets to only assets enumerated from a particular cloud platform.
+        - in: query
+          name: location
+          schema:
+            type: string
+          required: false
+          description: >
+            Prefix search of the derived location property.
+        - in: query
+          name: errorCode[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/ErrorCode"
+          required: false
+          explode: true
+          description: Filter assets to only include assets with matching error codes.
+        - in: query
+          name: portNumber[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/PortNumber"
+          required: false
+          explode: true
+          description: Filter assets to only include hosts with open ports
+            matching the port number.
+        - in: query
+          name: maxOpenPorts
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 65535
+          required: false
+          description: Max open ports from a single IP address.
+        - in: query
+          name: hasNetwork
+          schema:
+            type: boolean
+          required: false
+          description: |
+            Filter assets to include/exclude those with networks.
+            Deprecating.
+        - in: query
+          name: networkUid[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/UID"
+          required: false
+          explode: true
+          description: |
+            Unique identifier for a network.
+            If not supplied the request will apply to all networks the user is authorized to access.
+            Deprecating.
+        - in: query
+          name: gatewayId[]
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/GatewayID"
+          required: false
+          explode: true
+          description: |
+            Unique gateway id.
+            If not supplied the request will apply to all gateways.
+        - in: query
+          name: earliestCreatedAt
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Filter assets with a createdAt date greater or equal to this value
+        - in: query
+          name: latestCreatedAt
+          schema:
+            type: string
+            format: date-time
+          required: false
+          description: Filter assets with a createdAt date less than or equal to this value
+        - in: query
+          name: userUid
+          schema:
+            $ref: "#/components/schemas/UserUID"
+          required: false
+          description: Restricts the credentials to only those available to the user. This query parameter is ignored if the user is a researcher.
+        - in: query
+          name: relationshipTargetAssetUid
+          schema:
+            $ref: "#/components/schemas/AssetUID"
+          required: false
+          description: >
+            Filter assets which have a relationship with targetAssetUid equal to this value.
+        - in: query
+          name: relationshipType
+          schema:
+            $ref: "#/components/schemas/AssetRelationshipType"
+          required: false
+          description: >
+            Filter assets which have a relationship of this type.
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - location
+              - label
+              - createdAt
+              - updatedAt
+              - lastReachableAt
+              - lastScan
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+        - in: query
+          name: origin
+          schema:
+            type: string
+            enum:
+              - provided
+              - discovered
+          description: Optional property to filter results by human created or system discovered assets.
+          required: false
+        - name: lifecycleState[]
+          required: false
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - confirmed
+                - unconfirmed
+                - archived
+                - ignored
+          description:
+            Optional property to filter results by asset lifecycle state. When not
+            supplied, all assets except `archived` will be returned.
+        - in: query
+          name: omitFields
+          description: Fields to omit from response.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - ALL
+                - relationships
+                - externalRelationships
+                - ports
+                - networks
+                - scopeRules
+                - binaries
+                - userRoles
+        - $ref: "#/components/parameters/IpRanges"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfAssets"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+            - asset_scan_gr
+    post:
+      operationId: postAsset
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Creates an asset.
+      requestBody:
+        description: Asset to create.
+          If the asset is of cloud account type, only its metadata returned in
+          the response as credential data is restricted to asset_scan_gr scope.
+          If the asset is of webapp type, corresponding FQDN or IP host asset
+          will also be created.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleOrMultiAsset"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleOrMultiAssetResponse"
+        "202":
+          $ref: "#/components/responses/202StatusAccepted"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+  /v2/assets/{assetUid}/whois:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getWHOIS
+      tags:
+        - assets
+        - hosts
+      description: >
+        Retrieves the WHOIS data for a single asset.
+      responses:
+        "200":
+          $ref: "#/components/responses/WHOISResponse"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+            - asset_scan_gr
+    put:
+      operationId: putWHOIS
+      tags:
+        - assets
+        - hosts
+      description: >
+        Adds the WHOIS data to a single asset.
+      requestBody:
+        description: Whois data to add to asset.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WHOISRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/WHOISResponse"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+  /v2/assets/{assetUid}:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getAsset
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Retrieves a single asset. If the user is a researcher, only the credentials they are authorized to access will be returned.
+        If the asset is of cloud account type, only a user with asset_scan_gr scope can access its credential data.
+      parameters:
+        - in: query
+          name: userUid
+          schema:
+            $ref: "#/components/schemas/UserUID"
+          required: false
+          description: Restricts the credentials to only those available to the user. This query parameter is ignored if the user is a researcher.
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleAssetResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_scan_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+    patch:
+      operationId: patchAsset
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Patches the properties of a single asset.
+      requestBody:
+        description: Asset properties to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleAsset"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleAssetResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteAsset
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Deletes an asset. This is intended to be a privileged operation.
+        Regular use should be to mark the asset as inactive. Any relationships
+        that involve the deleted asset will be also be deleted, as will any
+        association to listings.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/assets/{assetUid}/related-assets:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getRelatedAssets
+      tags:
+        - assets
+      description: >
+        Returns all assets that share a relationship with the matched UID.
+      parameters:
+        - $ref: "#/components/parameters/AssetTypeQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleOrMultiAssetResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+            - asset_scan_gr
+
+  /v2/assets/{assetUid}/tools/burp/target-scope.json:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getBurpTargetScopeForAsset
+      tags:
+        - assets
+        - webapps
+      description: >
+        Retrieve a Burp target scope file, if the asset is a webapp.
+      responses:
+        "200":
+          description: JSON Target Scope file for Burp.
+          content:
+            application/json: {}
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+
+  /v2/assets/{assetUid}/scripts:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getAssetScripts
+      tags:
+        - webapps
+        - mobileapps
+        - scripts
+      description:
+        Gets all scripts owned by the mobile or web application asset. Returns 409 status
+        if the asset is not of one of these types.
+      parameters:
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - name
+              - scriptRole
+              - createdAt
+              - updatedAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfAssetScripts"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+    post:
+      operationId: postAssetScript
+      tags:
+        - webapps
+        - mobileapps
+        - scripts
+      description: >
+        Adds a script to a mobile or web application asset. Returns 409 status if the asset
+        is of any other type..
+      requestBody:
+        description: Script to add.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetScript"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleAssetScript"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "412":
+          $ref: "#/components/responses/412PreconditionFailed"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/assets/{assetUid}/credentials:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getAssetCredentials
+      tags:
+        - webapps
+        - mobileapps
+        - credentials
+      description:
+        Gets all credentials owned by web application asset. Returns 409 status
+        if the asset is not of this type.
+      parameters:
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - name
+              - createdAt
+              - updatedAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfAssetCredentials"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_scan_gr
+            - asset_or
+
+  /v2/scripts/{scriptUid}:
+    parameters:
+      - $ref: "#/components/parameters/ScriptUIDPath"
+    get:
+      operationId: getAssetScript
+      tags:
+        - mobileapps
+        - scripts
+        - webapps
+      description: Gets an asset script.
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleAssetScript"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_scan_gr
+            - asset_or
+            - asset_lr
+    delete:
+      operationId: deleteAssetScript
+      tags:
+        - mobileapps
+        - scripts
+        - webapps
+      description: >
+        Delete a script from a asset.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    patch:
+      operationId: patchAssetScript
+      tags:
+        - mobileapps
+        - scripts
+        - webapps
+      description: >
+        Patch the properties of an asset script.
+      requestBody:
+        description: Script properties to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRoleScriptUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleUserRoleScript"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/scripts/{scriptUid}/script-data:
+    parameters:
+      - $ref: "#/components/parameters/ScriptUIDPath"
+    get:
+      operationId: getAssetScriptData
+      tags:
+        - mobileapps
+        - scripts
+        - webapps
+      description: Gets the script data for an asset script.
+      responses:
+        "200":
+          description: JSON-representation of the asset script data
+          content:
+            application/json: {}
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+
+  /v2/assets/{assetUid}/ports/{portNumber}/{portProtocol}:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+      - $ref: "#/components/parameters/PortNumberPath"
+      - $ref: "#/components/parameters/PortProtocolPath"
+    get:
+      operationId: getHostPort
+      tags:
+        - hosts
+        - ports
+      description: >
+        Retrieve a port for a host asset.
+      responses:
+        "200":
+          $ref: "#/components/responses/SinglePort"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+    put:
+      operationId: putHostPort
+      tags:
+        - hosts
+        - ports
+      description: >
+        Upsert a port to a host asset. Will return 409 status if the asset
+        is not a single host (i.e. a CIDR).
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        description: Port properties to upsert.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Port"
+      responses:
+        "200":
+          $ref: "#/components/responses/SinglePort"
+        "201":
+          $ref: "#/components/responses/SinglePort"
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "412":
+          $ref: "#/components/responses/412PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    patch:
+      operationId: patchHostPort
+      tags:
+        - hosts
+        - ports
+      description: >
+        Update properties of a port belonging a single-IP host asset.
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        description: Asset properties to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/SinglePort"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "412":
+          $ref: "#/components/responses/412PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteHostPort
+      tags:
+        - hosts
+        - ports
+      description: >
+        Delete a port from a host asset. Will return 409 status if the asset
+        is not a single host (i.e. a CIDR).
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/assets/{assetUid}/binaries/{version}:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+      - $ref: "#/components/parameters/ApplicationVersionPath"
+    put:
+      operationId: putApplicationBinary
+      tags:
+        - mobileapps
+      description: >
+        Upsert an application binary file or the Url to the binary in the app store.
+      requestBody:
+        description: Application binary properties to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationBinary"
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "412":
+          $ref: "#/components/responses/412PreconditionFailed"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteApplicationBinary
+      tags:
+        - mobileapps
+      description: >
+        Delete an application binary.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/assets/{assetUid}/user-roles:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getUserRoles
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+      description: Gets a paginated list of all user roles for a mobile or
+        web application. Returns a 409 status code if the asset is
+        not one of these expected types.
+      parameters:
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - name
+              - scannable
+              - createdAt
+              - updatedAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+        - $ref: "#/components/parameters/ScannableQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfUserRoles"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+    post:
+      operationId: postUserRole
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+      description:
+        Adds a user role to a mobile or web application asset. Returns
+        a 409 status code if the asset is not one of these expected types.
+      requestBody:
+        description: Mobile or web application user role to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRole"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleUserRole"
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-roles/{userRoleUid}:
+    parameters:
+      - $ref: "#/components/parameters/UserRoleUIDPath"
+    get:
+      operationId: getUserRole
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+      description: Retrieves the properties of the supplied user role.
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleUserRole"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+    patch:
+      operationId: patchUserRole
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+      description:
+        Patch properties of a user role for a mobile or web application asset.
+        Will return a 409 status code if the type is not one of these expected
+        types.
+      requestBody:
+        description: User role to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRole"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleUserRole"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteUserRole
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+      description:
+        Delete a user role from a mobile or web application asset. Will
+        return a 409 status code if the type is not one of these expected
+        types.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-roles/{userRoleUid}/scripts/{scriptUid}:
+    parameters:
+      - $ref: "#/components/parameters/UserRoleUIDPath"
+      - $ref: "#/components/parameters/ScriptUIDPath"
+    patch:
+      operationId: patchUserRoleScript
+      tags:
+        - mobileapps
+        - webapps
+        - userroles
+        - scripts
+      description: Patch properties of a script that's been assigned to user role for a mobile or web application asset.
+      requestBody:
+        description: Updatable properties of a script to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRoleScriptUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleUserRoleScript"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/assets/{assetUid}/scope-rules:
+    parameters:
+      - $ref: "#/components/parameters/AssetUIDPath"
+    get:
+      operationId: getScopeRules
+      tags:
+        - hosts
+        - webapps
+        - scoperules
+      description: Gets a list of all scope rules for a host or web application asset.
+      parameters:
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - rule
+              - appliesTo
+              - createdAt
+              - updatedAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfScopeRules"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_srt_lr
+    post:
+      operationId: postScopeRule
+      tags:
+        - hosts
+        - webapps
+        - scoperules
+      description: Adds a scope rule to a web application or host asset.
+        Returns a 409 status code if the asset is not one of these expected types.
+      requestBody:
+        description: Host or web application scope rule to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScopeRule"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleScopeRuleResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/scope-rules/{scopeRuleUid}:
+    parameters:
+      - $ref: "#/components/parameters/ScopeRuleUIDPath"
+    get:
+      operationId: getScopeRule
+      tags:
+        - hosts
+        - webapps
+        - scoperules
+      description: Retrieve a scope rule.
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleScopeRuleResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+    patch:
+      operationId: patchScopeRule
+      tags:
+        - hosts
+        - webapps
+        - scoperules
+      description:
+        Patch properties of a scope rule for a host asset with CIDRs or web application asset.
+        Will return a 409 status code if the type is not one of these expected types.
+      requestBody:
+        description: Scope rule to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScopeRuleUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleScopeRuleResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteScopeRule
+      tags:
+        - hosts
+        - webapps
+        - scoperules
+      description:
+        Delete a scope rule from a host or web application asset. Will
+        return a 409 status code if the type is not one of these expected
+        types.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-roles/{userRoleUid}/user-role-credentials:
+    parameters:
+      - $ref: "#/components/parameters/UserRoleUIDPath"
+    get:
+      operationId: getUserRoleCredentials
+      parameters:
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - status
+              - createdAt
+              - updatedAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+        - in: query
+          name: userUid
+          schema:
+            $ref: "#/components/schemas/UserUID"
+          required: false
+          description: Restricts the credentials to only those available to the user. This query parameter is ignored if the user is a researcher.
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+      description: Gets the paginated credentials owned by the user role.
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedArrayOfUserRoleCredentials"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+    post:
+      operationId: postUserRoleCredential
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+      description:
+        Add a credential to a user role. Returns 409 Conflict if the credentials
+        do not match the structure of previously created credentials.
+      requestBody:
+        description: A single credential or an array of credentials.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleOrMultiUserRoleCredential"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleOrMultiUserRoleCredentialResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    patch:
+      operationId: patchUserRoleCredentials
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+      description:
+        Update the properties of multlipe user role credentials. Returns 409
+        Conflict when the credential format does not match existing
+        credentials.
+      requestBody:
+        description: A single credential update or an array of multiple credential updates.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MultiUserRoleCredentialUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/MultiUserRoleCredentialResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+    delete:
+      operationId: deleteUserRoleCredentials
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+      parameters:
+        - $ref: "#/components/parameters/CredentialUIDQuery"
+      description: Delete every credential belonging to the user role.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-role-credentials/{credentialUid}:
+    parameters:
+      - $ref: "#/components/parameters/CredentialUIDPath"
+    delete:
+      operationId: deleteUserRoleCredential
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+      description: Delete a user role credentialt.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    patch:
+      operationId: patchUserRoleCredential
+      tags:
+        - credentials
+        - mobileapps
+        - webapps
+        - userroles
+      description:
+        Patch the properties of a user-role credential. Returns 409 Conflict if the credentials
+        do not match the structure of previously created credentials.
+      requestBody:
+        description: Credential assignment.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRoleCredentialUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleUserRoleCredentialResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-role-credentials/{credentialUid}/assigned-users/{userUid}:
+    parameters:
+      - $ref: "#/components/parameters/CredentialUIDPath"
+      - $ref: "#/components/parameters/UserUIDPath"
+    put:
+      operationId: putUserRoleCredentialUser
+      tags:
+        - credentials
+        - mobileapps
+        - webapps
+        - userroles
+        - users
+      description:
+        Assign a user to a user-role credential. Credentials with sharing of
+        "one" will return a 409 status code when a request is received to add
+        further users. Credentials with sharing of "all" will return a 409
+        status code on any request to add users. There is not limit to the
+        number of users that may be added for sharing of "many".
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteUserRoleCredentialUser
+      tags:
+        - credentials
+        - mobileapps
+        - webapps
+        - userroles
+        - users
+      description: Remove a user from a user-role credential.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/user-role-credentials:
+    parameters:
+      - in: query
+        name: organizationUid
+        schema:
+          $ref: "#/components/schemas/OrganizationUID"
+        required: true
+        description: Unique identifier for an organization.
+      - in: query
+        name: listingUid
+        schema:
+          $ref: "#/components/schemas/ListingUID"
+        required: true
+        description: Unique identifier for a listing.
+      - in: query
+        name: userUid
+        schema:
+          $ref: "#/components/schemas/UserUID"
+        required: true
+        description: Unique identifier for a user.
+    post:
+      operationId: assignUserRoleCredentialsToUser
+      tags:
+        - mobileapps
+        - webapps
+        - credentials
+        - userroles
+        - users
+      description:
+        Assign user role credentials to a user for mobile application or
+        web application assets in a listing.
+      responses:
+        200:
+          description: The assignments occurred successfully
+        204:
+          $ref: "#/components/responses/204NoContent"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+
+  /v2/asset-relationships:
+    post:
+      operationId: postAssetRelationship
+      tags:
+        - asset-relationships
+      description: >
+        Creates a relationship between two assets.
+      requestBody:
+        description: Assets to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleAssetRelationship"
+      responses:
+        "201":
+          $ref: "#/components/responses/SingleAssetRelationshipResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/asset-relationships/{assetRelationshipUid}:
+    patch:
+      operationId: patchAssetRelationship
+      tags:
+        - asset-relationships
+      parameters:
+        - $ref: "#/components/parameters/AssetRelationshipUIDPath"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        description: Asset relationship properties to update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetRelationshipUpdate"
+      description: >
+        Updates a relationship between a two assets.
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleAssetRelationshipResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteAssetRelationship
+      tags:
+        - asset-relationships
+      parameters:
+        - $ref: "#/components/parameters/AssetRelationshipUIDPath"
+      description: >
+        Deletes a relationship between a two assets.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/external-relationships:
+    post:
+      operationId: postExternalRelationship
+      tags:
+        - external-relationships
+      description: Creates a relationship between asset in AssetService and an
+        external service.
+      requestBody:
+        description: External relationship to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalRelationship"
+      responses:
+        "201":
+          $ref: "#/components/responses/ExternalRelationshipResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/external-relationships/{assetRelationshipUid}:
+    patch:
+      operationId: patchExternalRelationship
+      tags:
+        - external-relationships
+      parameters:
+        - $ref: "#/components/parameters/AssetRelationshipUIDPath"
+      requestBody:
+        description: External relationship properties to update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetRelationshipUpdate"
+      description: Updates a relationship between a two assets.
+      responses:
+        "200":
+          $ref: "#/components/responses/ExternalRelationshipResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+    delete:
+      operationId: deleteExternalRelationship
+      tags:
+        - external-relationships
+      parameters:
+        - $ref: "#/components/parameters/AssetRelationshipUIDPath"
+      description: Deletes a relationship between a two assets.
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
+  /v2/asset-stats:
+    get:
+      operationId: getAssetStats
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - webapps
+      description: >
+        Returns active assets under test (in scope for a listing) and total active assets for the supplied organization and listings.
+      parameters:
+        - $ref: "#/components/parameters/SingleOrganizationUIDQuery"
+        - $ref: "#/components/parameters/ListingUIDQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/SingleAssetStat"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+
+  /v2/organizations/{organizationUid}/discovered-assets:
+    get:
+      operationId: getDiscoveredAssetSummaries
+      tags:
+        - assets
+        - cloudaccounts
+        - hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Retrieve the list summarized properties for discovered assets belonging
+        to  an organization, considering filtering and pagination query
+        parameters.
+
+        Additional query parameters generally restrict the resulting set of
+        assets according to AND semantics.
+      parameters:
+        - $ref: "#/components/parameters/OrganizationUIDPath"
+        - $ref: "#/components/parameters/ListingUIDQuery"
+        - $ref: "#/components/parameters/AssetTypeQuery"
+        - $ref: "#/components/parameters/HostTypeQuery"
+        - in: query
+          name: seedUid[]
+          schema:
+            $ref: "#/components/schemas/SeedUID"
+          required: false
+          description: Restrict the returned asset summaries to only those discovered from provided seed identifier.
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: >
+            Optional query parameter for a search string that will be used
+            to match within the label or location properties of assets. If
+            this query parameter is provided, any location query parameter
+            will be ignored.
+        - $ref: "#/components/parameters/PerPageQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - location
+              - label
+              - createdAt
+              - updatedAt
+              - lastReachableAt
+          description: Optional property to sort results by.
+          required: false
+        - $ref: "#/components/parameters/SortDirQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/PaginatedDiscoveredAssetsResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
+            - asset_srt_lr
+            - asset_scan_gr
+
+  /v2/listing-webapps/{listingUid}:
+    get:
+      operationId: getWebApps
+      tags:
+        - webapps
+      description:
+        Gets a list of active webapps with all their HTTPing settings,
+        scope rules, session handling scripts, SRT credentials and credential user
+        UIDs for the given listing. Used to generate input for TarantulaBurp and
+        TarantulaBurpValidator plugins.
+      parameters:
+        - $ref: "#/components/parameters/ListingUIDPath"
+      responses:
+        "200":
+          $ref: "#/components/responses/ArrayOfWebAppsResponse"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_scan_gr
+            - asset_lr
+
+  /v2/webapps/{assetUid}:
+    get:
+      operationId: getWebApp
+      tags:
+        - webapps
+      description:
+        Gets a webapp with all assigned HTTPing settings, scope rules,
+        session handling scripts, SRT credentials and credential user UIDs.
+        Used to generate input for TarantulaBurp and TarantulaBurpValidator plugins.
+      parameters:
+        - $ref: "#/components/parameters/AssetUIDPath"
+      responses:
+        "200":
+          $ref: "#/components/responses/WebApp"
+        "400":
+          $ref: "#/components/responses/400BadRequest"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_scan_gr
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "login.synack.com"
+          scopes:
+            #TODO review these scopes; especially if the asset service is no longer listing aware
+            asset_lr: Grants per-listing read access for all types of assets.
+            asset_srt_lr: Grants per-listing read access to assets that may be read by SRTs.
+            asset_or: Grants organization-level read access for all types of assets owned by a particular organization.
+            asset_boss_ow: Grants organization-level access to assets owned by a particular organization that may be modified by BOSS users.
+            asset_boss_lw: Grants per-listing write access to assets that may be modified by BOSS users.
+            asset_client_ow: Grants organization-level access to assets owned by a particular organization that may be modified by Client users.
+            asset_client_lw: Grants per-listing write access to assets that may be modified by Client users.
+            asset_user_or: Grants user-level read access to asset stats that owned by a particular organization.
+            asset_gr: Grants unrestricted read access to all assets. Except for credential data of cloud accout assets.
+            asset_gw: Grants unrestricted write access to all assets.
+            asset_scan_gr: Grants unrestricted read access to all assets. Including credential data of cloud account assets.
+  # types reference for proper client code generation by oapi-codegen
+  schemas:
+    WebRULE:
+      type: string
+      pattern: "^(/([a-zA-Z0-9_-~!$&'()+,;=:@.]|%[0-9a-fA-F]{2})+/)*(/?((([A-z]|[0-9]|[-_~])|%[0-9a-fA-F]{2}|[!$&'()*+,;=]|[:@])|[/?])*){0,1}//(#((([A-z]|[0-9]|[-_~.])|%[0-9a-fA-F]{2}|[!$&'()*+,;=]|[:@])|[/?])*){0,1}/?$"
+      description: Rule for web asset validation
+    AssetRelationshipType:
+      type: string
+      description: Type or relationship between assets.
+      enum:
+        - discoveredBy
+    UID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      readOnly: true
+      description: Unique Identifier.
+    WHOIS:
+      type: string
+      description: Whois results.
+    WHOISRequest:
+      type: object
+      description: Whois request data.
+      properties:
+        whois:
+          $ref: "#/components/schemas/WHOIS"
+    WHOISResponse:
+      type: object
+      description: Whois data.
+      properties:
+        whois:
+          $ref: "#/components/schemas/WHOIS"
+        asset_uid:
+          $ref: "#/components/schemas/AssetUID"
+    WritableUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique Identifier for POST/PATCH/PUT request bodies.
+    OrganizationUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,50}"
+      description: Unique identifier for an organization.
+    ListingUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,50}"
+      description: Unique identifier for an listing.
+      readOnly: true
+    AssetUID:
+      type: string
+      pattern: "^[0-9a-f]{24}"
+      description: Unique identifier for an asset.
+    ExternalUID:
+      type: string
+      pattern: "^[0-9a-zA-Z-_]{1,}$"
+      description: Unique identifier for an external entity. It has much more
+        loose requirements than AssetUID since in general we don't control
+        these external services.
+    CredentialUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a credential.
+    ScriptUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a credential.
+    UserUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,100}"
+      description: Unique identifier for a user.
+    UserRoleUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a mobile or web application user role.
+      readOnly: true
+    OperationUserUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      readOnly: true
+      description:
+        Automatically set by the server to the requesting user whenever the
+        resource is updated. May be a user account or a service account if
+        the action is performed by an automated.
+    AssetRelationshipUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a scan.
+    SeedUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,50}"
+      description: Unique identifier for an E-ASM seed.
+      readOnly: true
+    Base64Data:
+      type: string
+      description: Base64 encoding of data.
+      example: "TXkgdm9pY2UgaXMgbXkgcGFzc3dvcmQu"
+    GatewayID:
+      type: string
+      pattern: "^[0-9a-f]{16}"
+      description: Identifier for Launchpoint-managed VPN gateway.
+    CredentialSharing:
+      type: string
+      description: Determines the limits on users that may be assigned; "one"
+        permits only one user to be assigned, "many" places no
+        limit, and "all" prevents any users to explicitly assigned
+        as all users are implicitly allowed to use the credential.
+      enum:
+        - one
+        - many
+        - all
+    Creatable:
+      type: object
+      required:
+        - createdAt
+        - createdBy
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Automatically set by the server to the time the request was processed whenever the resource was created.
+        createdBy:
+          $ref: "#/components/schemas/OperationUserUID"
+
+    Updatable:
+      allOf:
+        - $ref: "#/components/schemas/Creatable"
+        - type: object
+          properties:
+            updatedAt:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Automatically set by the server to the time the request was processed whenever the resource is updated.
+            updatedBy:
+              $ref: "#/components/schemas/OperationUserUID"
+
+    AssetGateway:
+      type: object
+      description: Gateways and listings the asset is assigned to.
+      properties:
+        gatewayId:
+          $ref: "#/components/schemas/GatewayID"
+        listingUid:
+          $ref: "#/components/schemas/ListingUID"
+
+    GatewayAsset:
+      allOf:
+        - $ref: "#/components/schemas/AssetGateway"
+        - type: object
+          description: Assignment of an asset to a gateway
+          properties:
+            assetUid:
+              $ref: "#/components/schemas/AssetUID"
+
+    AssetListing:
+      type: object
+      description: Listings the asset is assigned to.
+      properties:
+        listingUid:
+          $ref: "#/components/schemas/ListingUID"
+        scope:
+          $ref: "#/components/schemas/Scope"
+        scopeRules:
+          description: Out of scope locations for this asset.
+          type: array
+          items:
+            $ref: "#/components/schemas/ScopeRule"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Automatically set by the server to the time the listing asset association was created.
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Automatically set by the server to the time the listing asset association is updated.
+
+    ListingAsset:
+      allOf:
+        - $ref: "#/components/schemas/AssetListing"
+        - type: object
+          description: Assignment of an asset to a listing.
+          properties:
+            assetUid:
+              $ref: "#/components/schemas/AssetUID"
+
+    Scope:
+      description: >
+        Set to _in_-scope means automated and manual testing _should_ occur;
+        _out_-of-scope means automated and manual testing _must not_ occur;
+        _discovered_ means observed through automated discovery and may be
+        automatically removed if not observed again during subseqent discovery
+        activities.
+      type: string
+      enum:
+        - in
+        - out
+        - discovered
+        - blocked
+
+    BulkListingAsset:
+      type: object
+      description: Asset UIDs to associate to and/or remove from a listing.
+      properties:
+        add:
+          type: array
+          description: Asset UIDs to associate to the listing.
+          items:
+            $ref: "#/components/schemas/ListingAsset"
+        remove:
+          type: array
+          description: Asset UIDs to remove from the listing.
+          items:
+            $ref: "#/components/schemas/AssetUID"
+
+    ArrayOfAssets:
+      type: array
+      items:
+        $ref: "#/components/schemas/SingleAsset"
+
+    GatewayIDInput:
+      type: object
+      required:
+        - gatewayId
+      description: Gateway ID to associate or remove from a listing.
+      properties:
+        gatewayId:
+          $ref: "#/components/schemas/GatewayID"
+
+    SingleOrMultiAsset:
+      oneOf:
+        - $ref: "#/components/schemas/SingleAsset"
+        - type: array
+          items:
+            $ref: "#/components/schemas/SingleAsset"
+
+    SingleAsset:
+      oneOf:
+        - $ref: "#/components/schemas/CloudAccountAsset"
+        - $ref: "#/components/schemas/HostAsset"
+        - $ref: "#/components/schemas/MobileApplicationAsset"
+        - $ref: "#/components/schemas/NetworkAsset"
+        - $ref: "#/components/schemas/WebApplicationAsset"
+      discriminator:
+        propertyName: assetType
+        mapping:
+          cloudaccount: "#/components/schemas/CloudAccountAsset"
+          host: "#/components/schemas/HostAsset"
+          mobileapp: "#/components/schemas/MobileApplicationAsset"
+          network: "#/components/schemas/NetworkAsset"
+          webapp: "#/components/schemas/WebApplicationAsset"
+
+    LifecycleUpdateCount:
+      type: object
+      properties:
+        updatedCount:
+          type: integer
+          description: Number of assets updated.
+          default: 0
+
+    CriticalityUpdateCount:
+      type: object
+      properties:
+        updatedCount:
+          type: integer
+          description: Number of assets updated.
+          default: 0
+
+    Asset:
+      allOf:
+        - type: object
+          required:
+            - assetType
+            - origin
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            organizationUid:
+              $ref: "#/components/schemas/OrganizationUID"
+            location:
+              type: string
+              readOnly: true
+              description: Derived human-readable text representation of the asset, based on assetType and other properties.
+            assetType:
+              $ref: "#/components/schemas/AssetType"
+              description: Derived from the properties associated with the asset.
+            inProduction:
+              type: boolean
+              description: Indicates whether the asset resides in a production environment.
+              default: true
+            active:
+              description:
+                Active assets may participate in listings. When inactive, the
+                asset is essentially soft-deleted and may not be scanned or
+                subject to new research by SRT.
+              type: boolean
+              default: true
+            label:
+              type: string
+              description: Optional label for the asset. If present, label is part of the derived property of asset location, which enables creation of multiple assets with different labels under a single organization.
+            description:
+              type: string
+              description: Optional description for the asset.
+            origin:
+              $ref: "#/components/schemas/AssetOrigin"
+            lifecycleState:
+              $ref: "#/components/schemas/AssetLifecycleState"
+            criticality:
+              $ref: "#/components/schemas/AssetCriticality"
+            changeStatus:
+              $ref: "#/components/schemas/AssetChangeStatus"
+            anyListingActive:
+              type: boolean
+              description:
+                This field is used for scheduling Fingerprinting scans.
+                A calculated field based on if the asset has any listings in which it is
+                active. This field is read only and relates only to assets created after Apr 1 2023.
+              default: false
+            anyListingActiveWithin2Years:
+              type: boolean
+              description:
+                This field is used for scheduling Fingerprinting scans.
+                A calculated field based on if the asset has any active listings or listings
+                deactivated less than 2 years ago. This field is read only and relates only to assets
+                created prior to Apr 1 2023.
+              default: false
+            scanStateUpdatedAt:
+              type: string
+              format: date-time
+              description: The date time the scan state was updated.
+            lastCheckedAt:
+              type: string
+              format: date-time
+              description: The last date time the asset was checked.
+            lastReachableAt:
+              type: string
+              format: date-time
+              description: The last date time the asset was successfully checked for reachability.
+            lastSuccessfulScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was successful.
+            lastFailedScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was failed.
+            firstSeen:
+              type: string
+              format: date-time
+              description: >
+                For assets with an origin of discovered. The date time when the
+                asset was first discovered.
+            lastSeen:
+              type: string
+              format: date-time
+              description: >
+                For assets with an origin of discovered. The date time when the
+                asset was last discovered or fingerprinted.
+            status:
+              $ref: "#/components/schemas/CheckerStatus"
+            errorCode:
+              $ref: "#/components/schemas/ErrorCode"
+            listings:
+              description: Array of listings the asset belongs to.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/AssetListing"
+            scopeRules:
+              description: Rules that modify the scope of security research for this asset.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/ScopeRuleSummary"
+            relationships:
+              description: Relationships which this asset participates in, either as a source or as a target.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/SingleAssetRelationship"
+            sourceRelationships:
+              description: Relationships which have this asset as a source (SourceAssetID and SourceAssetUID will be set automatically). This property is only available in the postAssetBulk request body and is not returned as part of any responses.
+              writeOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/SingleAssetRelationship"
+            externalRelationships:
+              description: External relationships which this asset participates
+                in as a source. When used in postAssetBulk request, AssetID and
+                AssetUID will be set automatically.
+              type: array
+              items:
+                $ref: "#/components/schemas/ExternalRelationship"
+            gateways:
+              description: Array of Launchpoint-managed VPN gateways per listing.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/AssetGateway"
+        - $ref: "#/components/schemas/Updatable"
+
+    AssetType:
+      type: string
+      enum:
+        - cloudaccount
+        - host
+        - network
+        - mobileapp
+        - webapp
+
+    HostType:
+      type: string
+      enum:
+        - ip
+        - cidr
+        - fqdn
+        - as
+
+    AssetOrigin:
+      type: string
+      description: Indicates the origin for the asset, i.e. whether the asset
+        was provided manually or it was discovered by some sort of automation.
+      default: provided
+      enum:
+        - provided
+        - discovered
+
+    AssetLifecycleState:
+      type: string
+      description: Indicates the asset position in asset lifecycle FSM.
+      default: confirmed
+      enum:
+        - confirmed
+        - unconfirmed
+        - ignored
+        - archived
+
+    AssetCriticality:
+      type: string
+      description: Indicates importance of the asset to the customer.
+      default: undefined
+      enum:
+        - high
+        - medium
+        - low
+        - undefined
+
+    AssetChangeStatus:
+      type: string
+      description: Indicates whether the asset is newly discovered, has changed since last evaluated, or is unchanged.
+      default: unchanged
+      enum:
+        - new
+        - changed
+        - unchanged
+
+    ScopeRuleSummary:
+      type: object
+      description: Part of the scope of an asset that is included/excluded from a specific activity.
+      required:
+        - uid
+        - rule
+        - scope
+        - appliesTo
+      properties:
+        uid:
+          $ref: "#/components/schemas/UID"
+        rule:
+          $ref: "#/components/schemas/WebRULE"
+          description: A textual definition of the scope rule. Format will vary by assetType.
+        scope:
+          $ref: "#/components/schemas/ScopeRuleInclusion"
+        appliesTo:
+          $ref: "#/components/schemas/ScopeRuleApplicability"
+    ScopeRule:
+      allOf:
+        - $ref: "#/components/schemas/ScopeRuleSummary"
+        - $ref: "#/components/schemas/Updatable"
+    ScopeRuleUpdate:
+      type: object
+      description: Updatable properties of a Scope Rule.
+      properties:
+        rule:
+          type: string
+          description: A textual definition of the scope rule. Format will vary by assetType.
+        scope:
+          $ref: "#/components/schemas/ScopeRuleInclusion"
+        appliesTo:
+          $ref: "#/components/schemas/ScopeRuleApplicability"
+    ScopeRuleApplicability:
+      type: string
+      enum:
+        - scanners
+        - srt
+        - both
+    ScopeRuleInclusion:
+      type: string
+      enum:
+        - in
+        - out
+    ApplicationAsset:
+      type: object
+      properties:
+        userRoles:
+          description: User roles available for the application.
+          readOnly: true
+          type: array
+          items:
+            $ref: "#/components/schemas/UserRole"
+
+    CloudAccountAsset:
+      allOf:
+        - $ref: "#/components/schemas/Asset"
+        - type: object
+          properties:
+            cloudAccount:
+              $ref: "#/components/schemas/CloudAccountProperties"
+
+    CloudAccountProperties:
+      description: Keeps credentials for accessing the cloud provider.
+        Mandatory for assets of 'cloudaccount' type.
+      type: object
+      properties:
+        credentialData:
+          $ref: "#/components/schemas/Base64Data"
+        cloudPlatform:
+          $ref: "#/components/schemas/CloudPlatform"
+        cloudCredentialFormat:
+          $ref: "#/components/schemas/CloudCredentialFormat"
+      required:
+        - credentialData
+        - cloudPlatform
+        - cloudCredentialFormat
+
+    HostAsset:
+      allOf:
+        - $ref: "#/components/schemas/Asset"
+        - type: object
+          properties:
+            host:
+              $ref: "#/components/schemas/HostProperties"
+
+    NetworkRef:
+      type: object
+      description: |
+        Reference to the network that an asset can be found on.
+        The asset in question and the network must belong to the same organization.
+        Deprecating.
+      properties:
+        networkUid:
+          $ref: "#/components/schemas/UID"
+
+    HostProperties:
+      allOf:
+        - $ref: "#/components/schemas/NetworkRef"
+        - type: object
+          properties:
+            ipAddress:
+              type: string
+              description: IP v4 or v6 address.
+            cidr:
+              type: string
+              description: IP v4 or v6 CIDR notation.
+            ipRanges:
+              $ref: "#/components/schemas/ArrayOfIpRanges"
+              description: List of CIDRs and IP Ranges
+            firstIPAddress:
+              type: string
+              description: The first IP address in the range (CIDRs only).
+              readOnly: true
+            lastIPAddress:
+              type: string
+              description: The last IP address in the range (CIDRs only).
+              readOnly: true
+            fqdn:
+              type: string
+              description: Fully-qualified domain name.
+            hostname:
+              type: string
+              description: Host name.
+            autonomousSystemNumber:
+              type: string
+              description: Autonomous System Number in asdot notation. See https://datatracker.ietf.org/doc/rfc5396/.
+            autonomousSystemName:
+              type: string
+              description: Name of Autonomous System. See https://datatracker.ietf.org/doc/rfc5396/.
+            cloudInstanceName:
+              description: Name of instance when cloudPlatform is provided.
+              type: string
+            cloudPlatform:
+              $ref: "#/components/schemas/CloudPlatform"
+            operatingSystem:
+              $ref: "#/components/schemas/OperatingSystem"
+            providerName:
+              description: Name of the cloud or hosting provider according to fingerprinting.
+              type: string
+            latitude:
+              description: Latitude of geolocated asset according to fingerprinting.
+              type: number
+              format: double
+            longitude:
+              description: Longitude of geolocated asset according to fingerprinting.
+              type: number
+              format: double
+            city:
+              description: City of geolocated asset according to fingerprinting.
+              type: string
+            country:
+              description: Country of geolocated asset according to fingerprinting.
+              type: string
+            state:
+              description: State of geolocated asset according to fingerprinting.
+              type: string
+            ports:
+              type: array
+              items:
+                $ref: "#/components/schemas/Port"
+              description: Ports of a single host.
+            portsOpenTotal:
+              type: integer
+              readOnly: true
+              description: The number of open ports (TCP or UDP) for a single IP address host asset.
+              minimum: 0
+              maximum: 65535
+            rdnsHostnames:
+              description: Hostnames returned by reverse DNS part of fingerprinting.
+              type: string
+            lastFingerprint:
+              description: Last time a fingerprinting scan checked the asset.
+              type: string
+              format: date-time
+            lastSuccessfulScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was successful.
+            lastFailedScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was failed.
+            timesFinished:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan finished.
+            timesFailed:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan failed.
+            timesLastFailed:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan failed since the last finished scan.
+            scanState:
+              $ref: "#/components/schemas/ScanState"
+            scanStateUpdatedAt:
+              type: string
+              format: date-time
+              description: The date time the scan state was updated.
+    OperatingSystem:
+      type: object
+      properties:
+        name:
+          description: Name of operating system according to fingerprinting.
+          type: string
+        cpe:
+          type: string
+          description: CPE of operating system according to fingerprinting.
+
+    NetworkAsset:
+      allOf:
+        - $ref: "#/components/schemas/Asset"
+        - type: object
+          properties:
+            network:
+              $ref: "#/components/schemas/NetworkProperties"
+
+    NetworkProperties:
+      type: object
+      properties:
+        gatewayId:
+          type: string
+          $ref: "#/components/schemas/GatewayID"
+          description: Identifier for Launchpoint-managed VPN gateway.
+
+    MobileApplicationAsset:
+      allOf:
+        - $ref: "#/components/schemas/Asset"
+        - type: object
+          properties:
+            mobileApplication:
+              $ref: "#/components/schemas/MobileApplicationProperties"
+
+    MobileApplicationProperties:
+      allOf:
+        - $ref: "#/components/schemas/ApplicationAsset"
+        - type: object
+          required:
+            - applicationName
+          properties:
+            applicationName:
+              type: string
+              description: Name of the application.
+            operatingSystem:
+              $ref: "#/components/schemas/MobileOperatingSystem"
+            binaries:
+              type: array
+              items:
+                $ref: "#/components/schemas/ApplicationBinary"
+              readOnly: true
+            mfa:
+              type: boolean
+              description: Optional MFA/OTP/CAPTCHA
+            selfRegistration:
+              type: boolean
+              description: Optional self registration
+            ntlm:
+              type: boolean
+              description: Optional new technology lan manager.
+            sslCertificatePinning:
+              type: boolean
+              description: Optional SSL certifications pinning or root detection
+
+    MobileOperatingSystem:
+      type: string
+      enum:
+        - ios
+        - android
+      description: The operating system for the asset.
+
+    WebApplicationAsset:
+      allOf:
+        - $ref: "#/components/schemas/Asset"
+        - type: object
+          properties:
+            webApplication:
+              $ref: "#/components/schemas/WebApplicationProperties"
+
+    WebApplicationProperties:
+      allOf:
+        - $ref: "#/components/schemas/ApplicationAsset"
+        - $ref: "#/components/schemas/NetworkRef"
+        - type: object
+          required:
+            - url
+          properties:
+            url:
+              type: string
+            reachabilityImageCaptureUrl:
+              type: string
+              format: uri
+              description: Optional URL to image capture of failed reachability check.
+            mfa:
+              type: boolean
+              description: Optional MFA/OTP/CAPTCHA
+            selfRegistration:
+              type: boolean
+              description: Optional self registration
+            ntlm:
+              type: boolean
+              description: Optional new technology lan manager.
+            httpingSettings:
+              $ref: "#/components/schemas/HTTPingSettings"
+            timesFinished:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan finished.
+            timesFailed:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan failed.
+            timesLastFailed:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of times web application scan failed since the last finished scan.
+            scanState:
+              $ref: "#/components/schemas/ScanState"
+            scanStateUpdatedAt:
+              type: string
+              format: date-time
+              description: The date time the scan state was updated.
+            scanLastAcceptedAt:
+              type: string
+              format: date-time
+              description: The last date time the web application was accepted to scan.
+            lastSuccessfulScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was successful.
+            lastFingerprint:
+              description: Last time a fingerprinting scan checked the asset.
+              type: string
+              format: date-time
+
+    HTTPingSettings_Headers:
+      type: object
+      properties:
+        additionalProperties:
+          type: object
+          additionalProperties:
+            type: string
+
+    HTTPingSettings:
+      description: HTTPingSettings represents custom settings for webapp
+        reachability checks. All fields are optional.
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL to perform the check. If not defined, webapp main URL will be used.
+        insecure:
+          type: boolean
+          description: When set to `true`, bypasses SSL/TLS checks.
+        responseHeaderTimeout:
+          type: integer
+          minimum: 0
+          description: Max time waiting for the HTTP response header, in seconds.
+        timeout:
+          type: integer
+          minimum: 0
+          description: Max time waiting for the whole HTTP response, in seconds.
+        followRedirects:
+          type: boolean
+          description:
+            When set to `false`, redirects are not followed and the last
+            server response returned.
+        method:
+          type: string
+          description: HTTP method to use.
+        headers:
+          $ref: "#/components/schemas/HTTPingSettings_Headers"
+          description: Custom HTTP headers to send. It must be a string-to-string map.
+          example:
+            { "X-Custom-Header1": "value1", "X-Custom-Header2": "value2" }
+        body:
+          type: string
+          description: HTTP request entity to send.
+        validCodes:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            description: HTTP response code
+          description: List of response status codes considered as valid.
+            When defined, ping will be considered succeeded only when response
+            status code exists in this list.
+            Mutually exclusive with InvalidCodes.
+          example: [200, 201, 204]
+        invalidCodes:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            description: HTTP response code
+          description: List of response status codes considered as invalid
+            When defined, ping will be considered succeeded only when response
+            status code does not exist in this list.
+            Mutually exclusive with ValidCodes.
+          example: [400, 401, 403, 500]
+
+    AssetBulkLifecycleStateUpdate:
+      type: object
+      required:
+        - organizationUid
+        - uid
+        - lifecycleState
+      properties:
+        organizationUid:
+          $ref: "#/components/schemas/OrganizationUID"
+        assetUids:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetUID"
+        lifecycleState:
+          $ref: "#/components/schemas/AssetLifecycleState"
+
+    AssetBulkCriticalityUpdate:
+      type: object
+      required:
+        - organizationUid
+        - uid
+        - criticality
+      properties:
+        organizationUid:
+          $ref: "#/components/schemas/OrganizationUID"
+        assetUids:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetUID"
+        criticality:
+          $ref: "#/components/schemas/AssetCriticality"
+
+    DiscoveredAssetsPage:
+      type: object
+      properties:
+        totalByStatus:
+          $ref: "#/components/schemas/DiscoveredAssetsTotals"
+        discoveredAssets:
+          $ref: "#/components/schemas/ArrayOfAssetSummaries"
+
+    DiscoveredAssetsTotals:
+      type: object
+      properties:
+        all:
+          type: number
+          readOnly: true
+        unconfirmed:
+          type: number
+          readOnly: true
+        inTriage:
+          type: number
+          readOnly: true
+        triaged:
+          type: number
+          readOnly: true
+        confirmed:
+          type: number
+          readOnly: true
+        rejected:
+          type: number
+          readOnly: true
+
+    AssetSummary:
+      allOf:
+        - type: object
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            organizationUid:
+              $ref: "#/components/schemas/OrganizationUID"
+            location:
+              type: string
+              readOnly: true
+              description: Derived human-readable text representation of the asset, based on assetType and other properties.
+            assetType:
+              $ref: "#/components/schemas/AssetType"
+              description: Derived from the properties associated with the asset.
+              readOnly: true
+            label:
+              type: string
+              description: Optional label for the asset. If present, label is part of the derived property of asset location, which enables creation of multiple assets with different labels under a single organization.
+            origin:
+              $ref: "#/components/schemas/AssetOrigin"
+            changeStatus:
+              $ref: "#/components/schemas/AssetChangeStatus"
+            providerName:
+              description: Name of the cloud or hosting provider according to fingerprinting.
+              type: string
+              readOnly: true
+            lastCheckedAt:
+              type: string
+              format: date-time
+              description: The last date time the credential was checked.
+            lastReachableAt:
+              type: string
+              format: date-time
+              description: The last date time the asset was successfully checked for reachability.
+            lastSuccessfulScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was successful.
+            lastFailedScan:
+              type: string
+              format: date-time
+              description: The last date time the asset scan was failed.
+            firstSeen:
+              type: string
+              format: date-time
+              description: >
+                For assets with an origin of discovered. The date time when the
+                asset was first discovered.
+            lastSeen:
+              type: string
+              format: date-time
+              description: >
+                For assets with an origin of discovered. The date time when the
+                asset was last discovered or fingerprinted.
+            status:
+              $ref: "#/components/schemas/CheckerStatus"
+            errorCode:
+              $ref: "#/components/schemas/ErrorCode"
+            listings:
+              description: Array of listings the asset belongs to.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/AssetListing"
+            relatedAssets:
+              description: Relationships which this asset participates in, either as a source or as a target.
+              readOnly: true
+              type: array
+              items:
+                $ref: "#/components/schemas/ArrayOfRelatedAssets"
+        - $ref: "#/components/schemas/Updatable"
+
+    RelatedAsset:
+      type: object
+      properties:
+        assetUid:
+          $ref: "#/components/schemas/UID"
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+        location:
+          type: string
+          description: >
+            Derived human-readable text representation of the asset, based on
+            assetType and other properties.
+          readOnly: true
+        label:
+          type: string
+          description: >
+            Optional label for the asset. If present, label is part of the
+            derived property of asset location, which enables creation of
+            multiple assets with different labels under a single organization.
+          readOnly: true
+
+    ArrayOfAssetSummaries:
+      type: array
+      items:
+        $ref: "#/components/schemas/AssetSummary"
+    ArrayOfRelatedAssets:
+      type: array
+      items:
+        $ref: "#/components/schemas/RelatedAsset"
+    ScanState:
+      type: string
+      enum:
+        - new
+        - accepted
+        - queued
+        - dispatched
+        - failed
+        - finished
+        - in-progress
+      description: Scan state of asset.
+    PortNumber:
+      type: integer
+      format: int32
+      minimum: 0
+      maximum: 65535
+    ErrorCode:
+      type: integer
+      format: int32
+      description: Optional numeric error code set by an automated process such as scanning or checking.
+    PortProtocol:
+      type: string
+      enum:
+        - tcp
+        - udp
+    CloudPlatform:
+      description: Identifies cloud platform
+      type: string
+      enum:
+        - aws
+        - azure
+        - gcp
+    CloudCredentialFormat:
+      description: Describes format of the cloud credential
+      type: string
+      enum:
+        - aws_assume_role
+        - aws_secret_access
+        - azure_certificate
+        - azure_password
+        - gcp_cloud_asset
+        - gcp_compute_engine
+    Port:
+      allOf:
+        - type: object
+          required:
+            - scope
+            - observedState
+          properties:
+            number:
+              $ref: "#/components/schemas/PortNumber"
+            protocol:
+              $ref: "#/components/schemas/PortProtocol"
+            scope:
+              $ref: "#/components/schemas/Scope"
+            service:
+              type: string
+              description: >
+                Name of (expected) service running on port. Will use the
+                [Service Name and Transport Protocol Port Number Registry](https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml)
+                for well-known ports.
+            observedState:
+              $ref: "#/components/schemas/PortObservedState"
+            detectedService:
+              type: string
+              description: >
+                Name of detected service running on port according to fingerprinting.
+              readOnly: true
+            detectedProductName:
+              type: string
+              description: >
+                Name of software product running on port according to fingerprinting.
+              readOnly: true
+            detectedProductVersion:
+              type: string
+              description: Version of software product running on port according to fingerprinting.
+              readOnly: true
+            detectedProductConfidenceLevel:
+              type: integer
+              format: int
+              minimum: 1
+              maximum: 10
+              description: Confidence level of detected product on port according to fingerprinting.
+              readOnly: true
+            detectedProductCPE:
+              type: string
+              description: >
+                CPE for detected product according to fingerprinting.
+              readOnly: true
+            serviceBanner:
+              type: string
+              description: Port banner according to fingerprinting.
+              readOnly: true
+        - $ref: "#/components/schemas/Updatable"
+    PortUpdate:
+      type: object
+      properties:
+        scope:
+          $ref: "#/components/schemas/Scope"
+        service:
+          type: string
+          description: >
+            Name of service running on port. Will use the
+            [Service Name and Transport Protocol Port Number Registry](https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml)
+            for well-known ports.
+        observedState:
+          $ref: "#/components/schemas/PortObservedState"
+    PortObservedState:
+      type: string
+      enum:
+        - open
+        - closed
+        - filtered
+      description: Observed state reported by automated scanning.
+    ArrayOfScopeRules:
+      type: array
+      items:
+        $ref: "#/components/schemas/ScopeRule"
+    ArrayOfUserRoles:
+      type: array
+      items:
+        $ref: "#/components/schemas/UserRole"
+    UserRole:
+      allOf:
+        - type: object
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            name:
+              type: string
+              description: Unique name for the role with the mobile or web application.
+            scannable:
+              type: boolean
+              description: Only roles with this property set to true will be scanned by automated scanners.
+              default: false
+            authenticationStrategies:
+              $ref: "#/components/schemas/AuthenticationStrategies"
+            credentials:
+              type: array
+              description: Credentials owned by this role.
+              readOnly: true
+              items:
+                $ref: "#/components/schemas/UserRoleCredentialSummary"
+            credentialCounts:
+              $ref: "#/components/schemas/CredentialCounts"
+        - $ref: "#/components/schemas/Updatable"
+    AuthenticationStrategies:
+      type: object
+      description: Map of authentication strategies for various scanners, keyed by asset scanner name.
+      properties:
+        tarantulaBurpV2:
+          $ref: "#/components/schemas/AuthenticationStrategy"
+        burp:
+          $ref: "#/components/schemas/AuthenticationStrategy"
+    AuthenticationStrategy:
+      allOf:
+        - type: object
+          properties:
+            scripts:
+              $ref: "#/components/schemas/Scripts"
+    Scripts:
+      type: object
+      description: Map of scripts used by this strategy, keyed by script role.
+      properties:
+        authentication:
+          $ref: "#/components/schemas/UserRoleScript"
+        sessionValidation:
+          $ref: "#/components/schemas/UserRoleScript"
+        recordedLogin:
+          $ref: "#/components/schemas/UserRoleScript"
+    UserRoleScriptUpdate:
+      type: object
+      description: Updatable properties of a script in context of a user role.
+      properties:
+        status:
+          $ref: "#/components/schemas/CheckerStatus"
+        error:
+          type: string
+          description:
+            Optional text of error message. Server will unset this property
+            when status is set to any value other than invalid.
+        imageCaptureUrl:
+          type: string
+          format: uri
+          description: Optional Url to image capture of the script execution.
+        lastCheckedAt:
+          type: string
+          format: date-time
+          description: The most recent date time the script was run.
+        lastSuccessfulAt:
+          type: string
+          format: date-time
+          description: The most recent date time the script was successfully run.
+    ArrayOfUserRoleCredentials:
+      type: array
+      items:
+        $ref: "#/components/schemas/UserRoleCredential"
+    CredentialCounts:
+      description: Credential counts by credential status in context of a user role.
+      type: object
+      readOnly: true
+      properties:
+        unchecked:
+          type: integer
+          description: Total of credentials in context of a user role with unchecked status.
+        invalid:
+          type: integer
+          description: Total of credentials in context of a user role with invalid status.
+        valid:
+          type: integer
+          description: Total of credentials in context of a user role with valid status.
+    UserRoleCredentialSummary:
+      description: Credential used by an application in context of a user role.
+      type: object
+      properties:
+        uid:
+          $ref: "#/components/schemas/UID"
+        status:
+          $ref: "#/components/schemas/CheckerStatus"
+        lastCheckedAt:
+          type: string
+          format: date-time
+          description: The last date time the credential was checked.
+        sharing:
+          $ref: "#/components/schemas/CredentialSharing"
+    SingleOrMultiUserRoleCredential:
+      oneOf:
+        - $ref: "#/components/schemas/UserRoleCredential"
+        - type: array
+          items:
+            $ref: "#/components/schemas/UserRoleCredential"
+    UserRoleCredential:
+      description: Credential used by an application in context of a user role.
+      allOf:
+        - type: object
+          required:
+            - credentialData
+            - status
+            - sharing
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            userRoleUid:
+              $ref: "#/components/schemas/UserRoleUID"
+            assetUid:
+              $ref: "#/components/schemas/AssetUID"
+              required: false
+            organizationUid:
+              $ref: "#/components/schemas/OrganizationUID"
+              required: false
+            credentialData:
+              $ref: "#/components/schemas/Base64Data"
+            status:
+              $ref: "#/components/schemas/CheckerStatus"
+            lastCheckedAt:
+              type: string
+              format: date-time
+              description: The last date time the credential was checked.
+            sharing:
+              $ref: "#/components/schemas/CredentialSharing"
+            assignedUsers:
+              description: User assigned to a credential and role.
+              type: array
+              readOnly: true
+              items:
+                $ref: "#/components/schemas/UserUID"
+        - $ref: "#/components/schemas/Updatable"
+    MultiUserRoleCredentialUpdate:
+      type: array
+      items:
+        $ref: "#/components/schemas/UserRoleCredentialUpdateMultiItem"
+    UserRoleCredentialUpdate:
+      description: Update to a credential used by an application in context of a user role.
+      type: object
+      properties:
+        credentialData:
+          $ref: "#/components/schemas/Base64Data"
+        status:
+          $ref: "#/components/schemas/CheckerStatus"
+        lastCheckedAt:
+          type: string
+          format: date-time
+          description: The last date time the credential was checked.
+        sharing:
+          $ref: "#/components/schemas/CredentialSharing"
+    UserRoleCredentialUpdateMultiItem:
+      description: Item in a bulk update to a credentials used by an application in context of a user role.
+      allOf:
+        - $ref: "#/components/schemas/UserRoleCredentialUpdate"
+        - type: object
+          required:
+            - uid
+          properties:
+            uid:
+              $ref: "#/components/schemas/WritableUID"
+    ApplicationBinary:
+      type: object
+      properties:
+        version:
+          type: string
+          readOnly: true
+        downloadUrl:
+          type: string
+          format: uri
+    ProblemDetails:
+      type: object
+      description: "See [RFC 7807: Problem Details for HTTP APIs](https://tools.ietf.org/html/rfc7807)"
+      properties:
+        type:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 511
+          description: HTTP Status code.
+          readOnly: true
+        detail:
+          type: string
+          description: Message detailing the problem.
+          readOnly: true
+        instance:
+          type: string
+          description: generated problem instance number to correlate with logs
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FailedValidation"
+        failedValidations:
+          type: array
+          description: Array of indexed failed validation rules.
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/IndexedFailedValidations"
+        maxBatchSize:
+          type: integer
+          description: Maximum processable batch size.
+          readOnly: true
+        batchSize:
+          type: integer
+          description: Batch size sent when batch is too large.
+          readOnly: true
+    FailedValidation:
+      type: object
+      required:
+        - message
+      properties:
+        property:
+          type: string
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+    IndexedFailedValidations:
+      type: object
+      properties:
+        index:
+          type: integer
+          description: Zero-based index indicating the which item in request containing an array of items has failed validation.
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FailedValidation"
+
+    ArrayOfAssetScripts:
+      type: array
+      items:
+        $ref: "#/components/schemas/AssetScript"
+    AssetScript:
+      allOf:
+        - type: object
+          description: Script used to test web applications.
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            name:
+              type: string
+              description: Must be unique across all scripts owned by an asset.
+            scriptRole:
+              $ref: "#/components/schemas/ScriptRole"
+            scriptData:
+              $ref: "#/components/schemas/Base64Data"
+        - $ref: "#/components/schemas/Updatable"
+    UserRoleScript:
+      allOf:
+        - type: object
+          description: Script used to test a mobile or web applications.
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            status:
+              $ref: "#/components/schemas/CheckerStatus"
+            filename:
+              type: string
+              description: Generated script name.
+              readOnly: true
+            error:
+              type: string
+              description:
+                Optional text of error message. Server will unset this property
+                when status is set to any value other than invalid.
+            imageCaptureUrl:
+              type: string
+              format: uri
+              description: Optional Url to image capture of the script execution.
+            lastCheckedAt:
+              type: string
+              format: date-time
+              description: The most reecent date time the script was run.
+            lastSuccessfulAt:
+              type: string
+              format: date-time
+              description: The most recent date time the script was successfully run.
+    ScriptRole:
+      type: string
+      enum:
+        - authentication
+        - sessionValidation
+        - recordedLogin
+    CheckerStatus:
+      type: string
+      enum:
+        - unchecked
+        - invalid
+        - valid
+      description: Status reported by automated checkers.
+    SingleAssetRelationship:
+      oneOf:
+        - $ref: "#/components/schemas/DiscoveredByRelationship"
+      discriminator:
+        propertyName: relationshipType
+        mapping:
+          discoveredBy: "#/components/schemas/DiscoveredByRelationship"
+    AssetRelationship:
+      description: A relationship between two assets. Generally the relationship may be read as _source_-asset _relationship_-type _target_-asset. There cannot be multiple relationships between a pair of assets with the same relationship-type. Relationships have a starts-at date-time and an optional ends-at date-time; a relationship is considered _active_ at a point-in-time if the starts-at date is prior-to/equal-to the time-point, and the ends-at date-time is unset or is after/equal-to the time-point. Furthermore, for any given relationship-type linking a pair of assets, there can only be one active relationship at any give time point. A new relationship cannot be created with a start-at date-time after an existing relationship's starts-at when that relationship has an unset ends-at date-time, or the relationship has an ends-at after/equal-to the starts-at of the new relationship (such that these relationships active ranges would overlap).
+      allOf:
+        - type: object
+          required:
+            - sourceAssetUid
+            - targetAssetUid
+            - startsAt
+            - relationshipType
+          properties:
+            uid:
+              $ref: "#/components/schemas/AssetRelationshipUID"
+            sourceAssetUid:
+              $ref: "#/components/schemas/AssetUID"
+            targetAssetUid:
+              $ref: "#/components/schemas/AssetUID"
+            startsAt:
+              type: string
+              format: date-time
+              description: The date-time at which the relationship between the source and target asset is observed to first begin.
+            endsAt:
+              type: string
+              format: date-time
+              description: The date-time at which the relationship between the source and target asset was observed to end.
+            relationshipType:
+              description: Type or relationship between assets.
+              type: string
+              enum:
+                - discoveredBy
+        - $ref: "#/components/schemas/Updatable"
+    DiscoveredByRelationship:
+      description: Relationship indicating the source asset was discovered by scanning the target asset. Discovered-by relationships extend the uniqueness constraint to allow multiple pairs of this relationship-type between a pair of assets however each such relationship must have a unique asset-scanner property.
+      allOf:
+        - $ref: "#/components/schemas/AssetRelationship"
+        - type: object
+          required:
+            - assetScanner
+          properties:
+            assetScanner:
+              description: The asset-scanner that discovered the relationship.
+              type: string
+              enum:
+                - burp
+                - cloudEnumeration
+                - masscan
+                - nessus
+                - openVAS
+                - tarantulaBurpV2
+                - cidrExpansion
+                - amass
+                - fingerprinter
+                - easm
+    AssetRelationshipUpdate:
+      type: object
+      description: Updatable properties for all types of asset relationship.
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+          description: The date-time at which the relationship between the source and target asset is observed to first begin.
+        endsAt:
+          type: string
+          format: date-time
+          description: The date-time at which the relationship between the source and target asset was last observed.
+          nullable: true
+
+    ExternalRelationship:
+      description: >
+        A relationship between two assets. Source asset points to an asset in
+        AssetService `assets` table while Target asset points to some external
+        asset stored outside of AssetService. The target is fully identified
+        by two fields: `targetUid` and `targetService`. Generally the
+        relationship may be read as `source`-asset `type` `target`-asset.
+        There cannot be multiple relationships between a pair of assets with
+        the same `type`. Relationships have a `startsAt` date-time and an
+        optional `endsAt` time; a relationship is considered `active` at a
+        point-in-time if the `startsAt` date is prior-to/equal-to the time
+        point, and the `endsAt` time is unset or is after/equal-to the time
+        point. Furthermore, for any given `type` linking a pair of assets,
+        there can only be one active relationship at any given time point. A
+        new relationship cannot be created with a `startsAt` time after an
+        existing relationship's `startsAt` when that relationship has an unset
+        `endsAt` date-time, or the relationship has an `endsAt` after/equal-to
+        the `startsAt` of the new relationship (such that these relationships
+        active ranges would overlap).
+      allOf:
+        - type: object
+          required:
+            - type
+            - sourceAssetUid
+            - targetUid
+            - targetService
+            - startsAt
+          properties:
+            uid:
+              $ref: "#/components/schemas/AssetRelationshipUID"
+            type:
+              description: Type of relationship between assets. The direction
+                of reading is `sourceAsset` -- `type` -- `targetAsset`.
+              type: string
+              enum:
+                - discoveredBy
+            sourceAssetUid:
+              $ref: "#/components/schemas/AssetUID"
+            targetUid:
+              $ref: "#/components/schemas/ExternalUID"
+            targetService:
+              description: The type of the external service, holding the
+                "target" entity.
+              type: string
+              enum:
+                - assetDiscovery
+                - fractalScan
+                - xpanse
+            startsAt:
+              type: string
+              format: date-time
+              description: The date-time at which the relationship between the
+                source and target assets was observed to begin.
+            endsAt:
+              type: string
+              format: date-time
+              description: The date-time at which the relationship between the
+                source and target assets was observed to end.
+        - $ref: "#/components/schemas/Updatable"
+
+    AssetStat:
+      type: object
+      description: Stats for assets within a single organization.
+      properties:
+        activeAssets:
+          type: array
+          description: Totals for active assets.
+          items:
+            $ref: "#/components/schemas/AssetTypeTotal"
+    AssetTypeTotal:
+      type: object
+      required:
+        - assetType
+        - underTest
+        - underManagement
+      properties:
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+        underTest:
+          type: integer
+          description: Total of assets that are assigned to a listing with a scope of 'in'.
+        underManagement:
+          type: integer
+          description: Total of assets owned by the organization.
+
+    ArrayOfAssetCredentials:
+      type: array
+      items:
+        $ref: "#/components/schemas/AssetCredential"
+    AssetCredential:
+      description: Credential used by an application in context of a user role.
+      allOf:
+        - type: object
+          required:
+            - credentialData
+            - status
+            - sharing
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            credentialData:
+              $ref: "#/components/schemas/Base64Data"
+            status:
+              $ref: "#/components/schemas/CheckerStatus"
+            lastCheckedAt:
+              type: string
+              format: date-time
+              description: The last date time the credential was checked.
+            sharing:
+              $ref: "#/components/schemas/CredentialSharing"
+            assignedUsers:
+              description: User assigned to a credential and role.
+              type: array
+              readOnly: true
+              items:
+                $ref: "#/components/schemas/UserUID"
+        - $ref: "#/components/schemas/Updatable"
+
+    ArrayOfWebApps:
+      description:
+        List of simplified web assets, used by listing scanner workflows for
+        TarantulaBurp and TarantulaBurpValidator plugins.
+      type: array
+      items:
+        $ref: "#/components/schemas/WebApp"
+
+    WebApp:
+      description: Simplified object describing web asset, used by TarantulaBurp
+        and TarantulaBurpValidator plugins. Contains HTTPing settings, scope
+        rules, session handling scripts, SRT credentials and credential user UIDs.
+      allOf:
+        - type: object
+          required:
+            - uid
+            - url
+          properties:
+            uid:
+              $ref: "#/components/schemas/UID"
+            url:
+              type: string
+              description: URL of the web application
+            httpingSettings:
+              $ref: "#/components/schemas/HTTPingSettings"
+            scopeRules:
+              type: array
+              description: List of scope rules of the web application
+              items:
+                $ref: "#/components/schemas/WebAppScopeRule"
+            scripts:
+              type: array
+              description: List of session handling scripts assigned to the web application
+              items:
+                $ref: "#/components/schemas/WebAppScript"
+            credentials:
+              type: array
+              description: List of SRT credentials assigned to the web application
+              items:
+                $ref: "#/components/schemas/WebAppCredential"
+
+    WebAppScopeRule:
+      description: Auxiliary type for WebApp struct. It is a simplified object
+        describing scope rule for a web application.
+      allOf:
+        - type: object
+          required:
+            - inScope
+            - rule
+          properties:
+            inScope:
+              type: boolean
+              description:
+                Defines whether the pattern describes an out of scope or
+                in scope URLs of the web application.
+            rule:
+              type: string
+              description: Contains a pattern for web application URLs
+
+    WebAppScript:
+      description: Auxiliary type for WebApp struct. It is a simplified object
+        describing session handling script for a web application.
+      allOf:
+        - type: object
+          required:
+            - uid
+            - role
+            - data
+          properties:
+            uid:
+              type: string
+              description: UID of the session handling script
+            role:
+              type: string
+              description: Type of the script
+              enum:
+                - authentication
+                - sessionValidation
+                - recordedLogin
+            data:
+              type: string
+              description: Body of the script
+
+    WebAppCredential:
+      description: Auxiliary type for WebApp struct. It is a simplified object
+        describing SRT credential for a session handling script of web application.
+      allOf:
+        - type: object
+          required:
+            - uid
+            - data
+            - users
+          properties:
+            uid:
+              type: string
+              description: UID of the credential
+            data:
+              type: string
+              description: Credential data
+            users:
+              type: array
+              description: UIDs of users assigned to the credential
+              items:
+                type: string
+
+    IpRange:
+      type: string
+      description: IP Range could be a CIDR or an IP Range
+
+    ArrayOfIpRanges:
+      type: array
+      items:
+        $ref: "#/components/schemas/IpRange"
+
+    Pagination:
+      type: object
+      description: Standard pagination header information returned by paginated API endpoints.
+      properties:
+        limit:
+          type: integer
+          description: The number of items per page.
+          example: 100
+        current_page:
+          type: integer
+          description: The current page number.
+          example: 1
+        total_pages:
+          type: integer
+          description: The total number of pages available.
+          example: 10
+        total_count:
+          type: integer
+          format: int64
+          description: The total number of items available across all pages.
+          example: 987
+        link:
+          type: string
+          description: >
+            A string containing link relations for pagination, conforming to RFC 5988 (Web Linking).
+            Typically includes links for "first", "last", "prev", and "next" pages.
+          example: '<http://api.example.com/v2/assets?page=1&perPage=100>; rel="first", <http://api.example.com/v2/assets?page=2&perPage=100>; rel="next", <http://api.example.com/v2/assets?page=5&perPage=100>; rel="last"'
+        total_ips_expected:
+          type: integer
+          format: int64
+          description: (Optional) The total number of individual IP addresses expected within the scope of the query, if applicable (e.g., for CIDR expansion).
+          nullable: true
+          example: 2500
+      required:
+        - limit
+        - current_page
+        - total_pages
+        - total_count
+        - link
+  parameters:
+    OrganizationUIDQuery:
+      name: organizationUid[]
+      in: query
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/OrganizationUID"
+      required: false
+      description:
+        Unique identifier for an organization. If not supplied the request will
+        apply to all organizations the user is authorized to access.
+    SingleOrganizationUIDQuery:
+      name: organizationUid
+      in: query
+      explode: true
+      schema:
+        $ref: "#/components/schemas/OrganizationUID"
+      required: true
+      description:
+        Unique identifier for an organization. If not supplied the request will
+        apply to all organizations the user is authorized to access.
+    ListingUIDQuery:
+      name: listingUid[]
+      in: query
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/ListingUID"
+      required: false
+      description:
+        Unique identifier for an listing. If not supplied the request will
+        apply to all listings the user is authorized to access.
+    AssetTypeQuery:
+      name: assetType[]
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/AssetType"
+      required: false
+      explode: true
+      description: Restrict the returned asset summaries to only assets of the specified type.
+    HostTypeQuery:
+      name: hostType[]
+      in: query
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/HostType"
+      required: false
+      explode: true
+      description: >
+        Restrict the returned asset summaries to only the types of host assets requested when
+        assetType also includes host.
+    CredentialUIDQuery:
+      name: credentialUid[]
+      in: query
+      explode: true
+      schema:
+        type: array
+        items:
+          $ref: "#/components/schemas/CredentialUID"
+      required: false
+      description:
+        Unique identifier for a credential. If not supplied the request will
+        apply to all credentials the user is authorized to access.
+    OrganizationUIDPath:
+      name: organizationUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/OrganizationUID"
+      required: true
+      description: Unique identifier for an organization.
+    ListingUIDPath:
+      name: listingUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/ListingUID"
+      required: true
+      description: Unique identifier for an listing.
+    AssetUIDPath:
+      name: assetUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/AssetUID"
+      required: true
+      description: Unique identifier for an asset.
+    ScriptUIDPath:
+      name: scriptUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/UID"
+      required: true
+      description: Unique identifier for an asset script.
+    UserRoleUIDPath:
+      name: userRoleUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/UID"
+      required: true
+      description: Unique identifier for an asset user role.
+    ScopeRuleUIDPath:
+      name: scopeRuleUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/UID"
+      required: true
+      description: Unique identifier for a scope rule.
+    CredentialUIDPath:
+      name: credentialUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/UID"
+      required: true
+      description: Unique identifier for an asset credential.
+    UserUIDPath:
+      name: userUid
+      in: path
+      schema:
+        type: string
+      required: true
+      description: Unique identifier for a user.
+    AssetRelationshipUIDPath:
+      name: assetRelationshipUid
+      in: path
+      schema:
+        $ref: "#/components/schemas/UID"
+      required: true
+      description: Unique identifier for a relationship between assets.
+    PortNumberPath:
+      name: portNumber
+      in: path
+      schema:
+        $ref: "#/components/schemas/PortNumber"
+      required: true
+      description: Port number.
+    PortProtocolPath:
+      name: portProtocol
+      in: path
+      schema:
+        $ref: "#/components/schemas/PortProtocol"
+      required: true
+      description: Port protocol.
+    ApplicationVersionPath:
+      name: version
+      in: path
+      schema:
+        type: string
+      required: true
+      description: The version of an application.
+    ScriptRolePath:
+      name: scriptRole
+      in: path
+      schema:
+        $ref: "#/components/schemas/ScriptRole"
+      required: true
+      description: The role for the script indicates how it should be used.
+    PerPageQuery:
+      name: perPage
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 5000
+      required: false
+      description: >
+        Requested page size for pagination. A server-selected default of 100 will
+        be used when no perPage is requested via query parameter.
+    PageQuery:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      required: false
+      description: >
+        Page to retrieve in paginated response. A server-selected default of 1 will
+        be used when no page is requested via query parameter.
+    SortQuery:
+      name: sort
+      in: query
+      schema:
+        type: string
+      required: false
+      description: Name of the property the items in the response should be sorted by.
+    SortDirQuery:
+      name: sortDir
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: asc
+      required: false
+      description: Direction of sort-order for items in the response.
+    ScannableQuery:
+      name: scannable
+      in: query
+      schema:
+        type: boolean
+      required: false
+      description: Constrains the response to include users roles with a matching value for the scannable property.
+    IfMatch:
+      name: "If-Match"
+      in: header
+      required: true
+      description: |
+        Used to prevent the lost-update problem. The operation will only
+        continue if the ETag of the resource matches the supplied value;
+        other was a 412 status will be returned. Provide a returned
+        ETag value or * to force the operation.
+      schema:
+        type: string
+        pattern: '^(?:\".*\"|\*)$'
+    IpRanges:
+      name: ipRanges[]
+      in: query
+      schema:
+        $ref: "#/components/schemas/ArrayOfIpRanges"
+      required: false
+      explode: true
+      description: Restrict the returned asset summaries to only assets of the specified ip ranges.
+
+  headers:
+    ETag:
+      description: An identifier for a specific version of a resource
+      schema:
+        type: string
+        pattern: '^(?:W\/)?\".*\"$'
+    PaginationLimit:
+      description: Maximum number of items returned in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationCurrentPage:
+      description: Current page in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalPages:
+      description: Total number of pages in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalCount:
+      description: Total number of items in all pages of a paginated response.
+      schema:
+        format: int32
+        minimum: 1
+    Link:
+      description: Standard link header.
+      schema:
+        type: string
+
+  responses:
+    PaginatedArrayOfAssets:
+      description: Paginated assets.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfAssets"
+    PaginatedDiscoveredAssetsResponse:
+      description: Paginated discovered asset summaries.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DiscoveredAssetsPage"
+    SingleListingAsset:
+      description: The assignment of an asset to an listing.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ListingAsset"
+    SingleAssetResponse:
+      description: The current state of the requested asset.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SingleAsset"
+    AssetBulkLifecycleStateUpdateResponse:
+      description: Count of lifecycle states updated.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LifecycleUpdateCount"
+    AssetBulkCriticalityUpdateResponse:
+      description: Count of assets updated.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CriticalityUpdateCount"
+    WHOISResponse:
+      description: The whois data of the requested asset.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WHOISResponse"
+    SingleOrMultiAssetResponse:
+      description: A single asset or an array of assets.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SingleOrMultiAsset"
+
+    PaginatedArrayOfUserRoles:
+      description: Paginated user roles for a mobile or web application asset.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfUserRoles"
+    PaginatedArrayOfScopeRules:
+      description: Paginated scope rules of a host with CIDRs or web application asset.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfScopeRules"
+    SingleScopeRuleResponse:
+      description: The current state of a scope rule.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ScopeRule"
+    PaginatedArrayOfAssetScripts:
+      description: Paginated scripts for an asset.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfAssetScripts"
+    PaginatedArrayOfAssetCredentials:
+      description: Paginated credentials for an asset.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfAssetCredentials"
+    SinglePort:
+      description: The current state of a host port.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Port"
+    SingleUserRole:
+      description: The current state of a user role.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserRole"
+    SingleUserRoleScript:
+      description: The current state of a user role script.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserRoleScript"
+    PaginatedArrayOfUserRoleCredentials:
+      description: Paginated user role credentials for an organization.
+      headers:
+        "Pagination-Limit":
+          $ref: "#/components/headers/PaginationLimit"
+        "Pagination-Current-Page":
+          $ref: "#/components/headers/PaginationCurrentPage"
+        "Pagination-Total-Pages":
+          $ref: "#/components/headers/PaginationTotalPages"
+        "Pagination-Total-Count":
+          $ref: "#/components/headers/PaginationTotalCount"
+        "Link":
+          $ref: "#/components/headers/Link"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfUserRoleCredentials"
+    SingleOrMultiUserRoleCredentialResponse:
+      description: A single user role credential or an array of user role credentials.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SingleOrMultiUserRoleCredential"
+    MultiUserRoleCredentialResponse:
+      description: A single user role credential or an array of user role credentials.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfUserRoleCredentials"
+    SingleUserRoleCredentialResponse:
+      description: Identifying information about a credential.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserRoleCredential"
+    SingleAssetScript:
+      description: An application script.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetScript"
+    SingleAssetRelationshipResponse:
+      description: A relationship between two assets.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SingleAssetRelationship"
+    ExternalRelationshipResponse:
+      description: A relationship between asset in AssetService and asset in
+        an external service.
+      headers:
+        "ETag":
+          $ref: "#/components/headers/ETag"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ExternalRelationship"
+    SingleAssetStat:
+      description: Response containing a single asset stat.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetStat"
+    ArrayOfWebAppsResponse:
+      description: List of web assets with their HTTPing settings, scope rules,
+        session handling scripts, SRT credentials and credential user UIDs. Used
+        to generate input for web scanners like TarantulaBurp and TarantulaBurpValidator.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ArrayOfWebApps"
+    WebApp:
+      description:
+        Web asset with its HTTPing settings, scope rules, session handling
+        scripts, SRT credentials and credential user UIDs. Used to generate input for
+        web scanners like TarantulaBurp and TarantulaBurpValidator.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/WebApp"
+    202StatusAccepted:
+      description: Request accepted and being processed.
+    204NoContent:
+      description: No content.
+    400BadRequest:
+      description: Bad Request
+    401Unauthorized:
+      description: Unauthorized.
+    403Forbidden:
+      description: Forbidden
+    404NotFound:
+      description: Not found.
+    409Conflict:
+      description: Conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    412PreconditionFailed:
+      description: Precondition Failed.
+    413RequestEntityTooLarge:
+      description:
+        Returned generally when the size of the request body is too large to process, or specifically when the request
+        contains too many items, typically in a bulk API operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    422EntityNotProcessable:
+      description: Entity Not Processable
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    500InternalServerError:
+      description: Internal Server Error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    503ServiceUnavailable:
+      description: Service Unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+
+  
