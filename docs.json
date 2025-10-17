@@ -53,6 +53,10 @@
           {
             "group": "Asset Management",
             "openapi": "asset-v2-openapi.yaml"
+          },
+          {
+            "group": "Assessments",
+            "openapi": "monolith-openapi.yaml"
           }
         ]
       }

@@ -1,0 +1,529 @@
+openapi: 3.0.3
+info:
+  title: Synack Service
+  version: 2.0.0-rc1
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+servers:
+  - url: https://client.dev.syn/api
+  - url: https://client.ks-qa.synack.com/api
+  - url: https://client.staging.synack.com/api
+  - url: https://client.synack.com/api
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - organization
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        organization:
+          type: string
+    ValidationProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - organization
+        - invalidParams
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        organization:
+          type: string
+        invalidParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemDetailsSubProblem'
+    ProblemDetailsSubProblem:
+      type: object
+      required:
+        - name
+        - reason
+      properties:
+        name:
+          type: string
+        reason:
+          type: string
+paths:
+  /v2/organizations/{organizationUid}/assessments:
+    get:
+      operationId: getOrganizationAssessments
+      description: |
+        Retrieve a list of assessments for an organization
+      parameters:
+        - name: organizationUid
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: created_at
+            enum:
+              - name
+              - created_at
+              - pending_test_count
+              - scheduled_test_count
+              - active_test_count
+              - paused_test_count
+              - completed_test_count
+              - total_vulnerability_count
+          required: false
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            default: desc
+            enum:
+              - desc
+              - asc
+          required: false
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: false
+        - name: perPage
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+            maximum: 50
+          required: false
+        - name: search
+          in: query
+          schema:
+            type: string
+          required: false
+        - name: types[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - web
+                - host
+                - api
+                - mobile
+          required: false
+          explode: true
+        - name: tagIds[]
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          required: false
+          explode: true
+      responses:
+        '400':
+          description: 'Failed to parse query parameters'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+                example:
+                  type: 'https://synack.com/probs/invalid_query_parameters'
+                  title: 'Your query parameters did not validate'
+                  organization: 'organizations/orguid123'
+                  invalidParams:
+                    - name: 'sort'
+                      reason: 'sort must be one of: name, created_at, pending_test_count, scheduled_test_count, active_test_count, paused_test_count, completed_test_count, total_vulnerability_count'
+                    - name: 'sortDir'
+                      reason: 'sortDir must be one of: DESC, ASC'
+                    - name: 'page'
+                      reason: 'page must be a positive integer value'
+                    - name: 'perPage'
+                      reason: 'perPage cannot be larger than 20'
+                    - name: 'types[]'
+                      reason: 'types[] values must be one of: web, host, api, mobile'
+                    - name: 'tagIds[]'
+                      reason: 'Valid tagIds[] values are positive integers'
+        '200':
+          description: 'Succesfully returning a filtered list of assessments'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - assessments
+                  - metadata
+                properties:
+                  assessments:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - uid
+                        - name
+                        - createdAt
+                        - type
+                        - testCounts
+                        - vulnerabilityCount
+                      properties:
+                        uid:
+                          type: string
+                          example: 'assessmentuid921'
+                        name:
+                          type: string
+                          example: 'My favourite assessment'
+                        createdAt:
+                          type: string
+                          format: date-time
+                        type:
+                          type: string
+                          example: 'Web'
+                        testCounts:
+                          type: object
+                          required:
+                            - pending
+                            - scheduled
+                            - active
+                            - paused
+                            - completed
+                          example:
+                            pending: 1
+                            scheduled: 2
+                            active: 0
+                            paused: 1
+                            completed: 4
+                          properties:
+                            pending:
+                              type: integer
+                              minimum: 0
+                            scheduled:
+                              type: integer
+                              minimum: 0
+                            active:
+                              type: integer
+                              minimum: 0
+                            paused:
+                              type: integer
+                              minimum: 0
+                            completed:
+                              type: integer
+                              minimum: 0
+                        vulnerabilityCount:
+                          type: integer
+                          minimum: 0
+                          example: 13
+                  metadata:
+                    type: object
+                    required:
+                      - pagination
+                    properties:
+                      pagination:
+                        type: object
+                        required:
+                          - total
+                          - page
+                          - perPage
+                          - totalPages
+                          - first
+                          - last
+                          - self
+                        example:
+                          total: 116
+                          page: 3
+                          perPage: 20
+                          totalPages: 6
+                          first: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=1'
+                          last: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=6'
+                          self: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=3'
+                          prev: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=2'
+                          next: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=4'
+                        properties:
+                          total:
+                            type: integer
+                            minimum: 0
+                          page:
+                            type: integer
+                            minimum: 0
+                          perPage:
+                            type: integer
+                            minimum: 0
+                          totalPages:
+                            type: integer
+                            minimum: 0
+                          first:
+                            type: string
+                            format: uri
+                          last:
+                            type: string
+                            format: uri
+                          self:
+                            type: string
+                            format: uri
+                          prev:
+                            type: string
+                            format: uri
+                          next:
+                            type: string
+                            format: uri
+    post:
+      operationId: createOrganizationAssessment
+      description: |
+        Creates a new assessment for an organization
+      parameters:
+        - name: organizationUid
+          in: path
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - authenticationSelfRegistrationEnabled
+                - orgListingGroupId
+                - categoryId
+                - ownerContactsAttributes
+                - assets
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                authenticationSelfRegistrationEnabled:
+                  type: boolean
+                orgListingGroupId:
+                  type: integer
+                gatewayId:
+                  type: string
+                categoryId:
+                  type: integer
+                tagNames:
+                  type: array
+                  items:
+                    type: string
+                ownerContactsAttributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      signedId:
+                        type: string
+                assets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+      responses:
+        '201':
+          description: 'Assessment was created successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - assessment
+                properties:
+                  assessment:
+                    type: object
+                    required:
+                      - uid
+                      - name
+                      - description
+                      - createdAt
+                      - updatedAt
+                      - tags
+                      - ownerContacts
+                    properties:
+                      uid:
+                        type: string
+                        example: 'assessmentuid921'
+                      name:
+                        type: string
+                        example: 'My favourite assessment'
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                      ownerContacts:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - id
+                            - name
+                            - email
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            email:
+                              type: string
+        '400':
+          description: 'Invalid parameters'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+              example:
+                type: 'https://synack.com/probs/invalid_parameters'
+                title: 'Your query parameters did not validate'
+                organization: 'organizations/orguid123'
+                invalidParams:
+                  - name: 'name'
+                    reason: 'name is required'
+                  - name: 'orgListingGroupId'
+                    reason: 'orgListingGroupId is required'
+                  - name: 'categoryId'
+                    reason: 'categoryId is required'
+                  - name: 'authenticationSelfRegistrationEnabled'
+                    reason: 'authenticationSelfRegistrationEnabled must be a boolean value'
+                  - name: 'assets'
+                    reason: 'At least one asset is required'
+                  - name: 'ownerContactsAttributes'
+                    reason: 'At least one ownerContactsAttribute is required'
+        '422':
+          description: 'Invalid operation'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: 'https://synack.com/probs/operation_not_valid'
+                title: 'Invalid operation'
+                detail: 'Record invalid'
+                organization: 'organizations/orguid123'
+        '500':
+          description: 'Internal server error'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: 'https://synack.com/probs/internal_server_error'
+                title: 'Internal server error'
+                detail: 'An error occurred when creating the assessment. Please try again.'
+                organization: 'organizations/orguid123'
+  /v2/organizations/{organizationUid}/assessments/{assessmentUid}/tests:
+    post:
+      operationId: createAssessmentTest
+      description: |
+        Create a new test for an assessment
+      parameters:
+        - name: organizationUid
+          in: path
+          schema:
+            type: string
+          required: true
+        - name: assessmentUid
+          in: path
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - testPlan
+              properties:
+                name:
+                  type: string
+                testPlan:
+                  type: string
+                  enum:
+                    - Synack365
+                    - Synack90
+                    - Synack14
+                testObjective:
+                  type: string
+      responses:
+        '201':
+          description: 'Test was created successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - test
+                properties:
+                  test:
+                    type: object
+                    required:
+                      - name
+                      - testObjective
+                    properties:
+                      name:
+                        type: string
+                      testObjective:
+                        type: string
+        '400':
+          description: 'Failed to parse parameters'
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                required:
+                  - type
+                  - title
+                  - organization
+                  - assessment
+                  - invalidParams
+                properties:
+                  type:
+                    type: string
+                  title:
+                    type: string
+                  organization:
+                    type: string
+                  assessment:
+                    type: string
+                  invalidParams:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - name
+                        - reason
+                      properties:
+                        name:
+                          type: string
+                        reason:
+                          type: string
