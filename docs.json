@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "theme": "maple",
+  "name": "Synack Enterprise API",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -77,8 +77,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "logo/synack_light.svg",
+    "dark": "logo/synack_dark.svg"
   },
   "navbar": {
     "links": [
