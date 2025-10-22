@@ -1,16 +1,48 @@
 openapi: 3.0.3
 info:
-  title: Synack Service
-  version: 2.0.0-rc1
+  title: Synack API
+  version: 2.0.0
+  description: |
+    Comprehensive API for Synack's security testing platform, providing endpoints for managing assessments, vulnerabilities, users, and security testing operations.
   contact:
     name: Synack Engineering
     email: engineering@synack.com
+  license:
+    name: Proprietary
 servers:
   - url: https://client.dev.syn/api
+    description: Development environment
   - url: https://client.ks-qa.synack.com/api
+    description: QA environment
   - url: https://client.staging.synack.com/api
+    description: Staging environment
   - url: https://client.synack.com/api
+    description: Production environment
+  - url: https://internal.{host}/api
+    description: Internal API
+    variables:
+      host:
+        default: client.synack.com
+  - url: https://core.{host}/api
+    description: Core API
+    variables:
+      host:
+        default: client.synack.com
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Auth
+
   schemas:
     ProblemDetails:
       type: object
@@ -21,30 +53,29 @@ components:
       properties:
         type:
           type: string
+          description: A URI reference that identifies the problem type
         title:
           type: string
+          description: A short, human-readable summary of the problem type
         detail:
           type: string
+          description: A human-readable explanation specific to this occurrence of the problem
         organization:
           type: string
+          description: The organization UID associated with the problem
+
     ValidationProblemDetails:
-      type: object
-      required:
-        - type
-        - title
-        - organization
-        - invalidParams
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        organization:
-          type: string
-        invalidParams:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProblemDetailsSubProblem'
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          required:
+            - invalidParams
+          properties:
+            invalidParams:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProblemDetailsSubProblem'
+
     ProblemDetailsSubProblem:
       type: object
       required:
@@ -53,20 +84,402 @@ components:
       properties:
         name:
           type: string
+          description: The parameter name that caused the validation error
         reason:
           type: string
+          description: The reason why the parameter is invalid
+
+    Assessment:
+      type: object
+      required:
+        - uid
+        - name
+        - createdAt
+        - type
+        - testCounts
+        - vulnerabilityCount
+      properties:
+        uid:
+          type: string
+          example: 'assessmentuid921'
+        name:
+          type: string
+          example: 'My Security Assessment'
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [web, host, api, mobile]
+          example: 'Web'
+        testCounts:
+          $ref: '#/components/schemas/TestCounts'
+        vulnerabilityCount:
+          type: integer
+          minimum: 0
+          example: 13
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        ownerContacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnerContact'
+
+    TestCounts:
+      type: object
+      required:
+        - pending
+        - scheduled
+        - active
+        - paused
+        - completed
+      properties:
+        pending:
+          type: integer
+          minimum: 0
+        scheduled:
+          type: integer
+          minimum: 0
+        active:
+          type: integer
+          minimum: 0
+        paused:
+          type: integer
+          minimum: 0
+        completed:
+          type: integer
+          minimum: 0
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        editable:
+          type: boolean
+        organization_profile_id:
+          type: integer
+
+    OwnerContact:
+      type: object
+      required:
+        - id
+        - name
+        - email
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+
+    Vulnerability:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [Critical, High, Medium, Low, Informational]
+        status:
+          type: string
+        cvss_score:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    SuspectedVulnerability:
+      type: object
+      properties:
+        id:
+          type: integer
+        asset_uid:
+          type: string
+        category_in_scope:
+          type: boolean
+        confidence:
+          type: number
+          format: float
+        cvss_base:
+          type: number
+          format: float
+        exploitable_locations:
+          type: array
+          items:
+            type: string
+        false_positive:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        last_detected_at:
+          type: string
+          format: date-time
+        payload:
+          type: object
+        reference_urls:
+          type: array
+          items:
+            type: string
+        severity:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+        vulnerability_status_id:
+          type: integer
+        reason_title:
+          type: string
+        reason_description:
+          type: string
+        organization_profile_id:
+          type: integer
+        automated_triage_status:
+          type: string
+        automated_triage_status_updated_at:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        slug:
+          type: string
+        role:
+          type: string
+          enum: [client, researcher, admin]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: integer
+        filename:
+          type: string
+        content_type:
+          type: string
+        file_size:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    PaginationMetadata:
+      type: object
+      required:
+        - total
+        - page
+        - perPage
+        - totalPages
+        - first
+        - last
+        - self
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        perPage:
+          type: integer
+          minimum: 1
+        totalPages:
+          type: integer
+          minimum: 0
+        first:
+          type: string
+          format: uri
+        last:
+          type: string
+          format: uri
+        self:
+          type: string
+          format: uri
+        prev:
+          type: string
+          format: uri
+        next:
+          type: string
+          format: uri
+
+    AssessmentStats:
+      type: object
+      properties:
+        tests:
+          type: integer
+        averageRemediationDays:
+          type: integer
+        vulnerabilities:
+          $ref: '#/components/schemas/VulnerabilityCounts'
+        missions:
+          $ref: '#/components/schemas/MissionCounts'
+        coverage:
+          $ref: '#/components/schemas/CoverageData'
+
+    VulnerabilityCounts:
+      type: object
+      properties:
+        inReview:
+          type: integer
+        accepted:
+          type: integer
+        acceptedOpen:
+          type: integer
+
+    MissionCounts:
+      type: object
+      properties:
+        active:
+          type: integer
+        completed:
+          type: integer
+
+    CoverageData:
+      type: object
+      properties:
+        pageHits:
+          type: integer
+        classifiedTraffic:
+          type: integer
+
+    Test:
+      type: object
+      properties:
+        name:
+          type: string
+        testPlan:
+          type: string
+          enum: [Synack365, Synack90, Synack14]
+        testObjective:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+
+    PatchVerification:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+
+    OrganizationProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    AssessmentGroup:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
 paths:
+  # V2 Client API - Assessments
   /v2/organizations/{organizationUid}/assessments:
     get:
       operationId: getOrganizationAssessments
-      description: |
-        Retrieve a list of assessments for an organization
+      summary: Get assessments for an organization
+      description: Retrieve a paginated list of assessments for a specific organization with filtering and sorting options
+      tags:
+        - Assessments
       parameters:
         - name: organizationUid
           in: path
+          required: true
           schema:
             type: string
-          required: true
+          description: The unique identifier of the organization
         - name: sort
           in: query
           schema:
@@ -81,83 +494,54 @@ paths:
               - paused_test_count
               - completed_test_count
               - total_vulnerability_count
-          required: false
+          description: Field to sort by
         - name: sortDir
           in: query
           schema:
             type: string
             default: desc
-            enum:
-              - desc
-              - asc
-          required: false
+            enum: [desc, asc]
+          description: Sort direction
         - name: page
           in: query
           schema:
             type: integer
             minimum: 1
             default: 1
-          required: false
+          description: Page number for pagination
         - name: perPage
           in: query
           schema:
             type: integer
             minimum: 1
-            default: 10
             maximum: 50
-          required: false
+            default: 10
+          description: Number of items per page
         - name: search
           in: query
           schema:
             type: string
-          required: false
+          description: Search term to filter assessments by name
         - name: types[]
           in: query
           schema:
             type: array
             items:
               type: string
-              enum:
-                - web
-                - host
-                - api
-                - mobile
-          required: false
+              enum: [web, host, api, mobile]
           explode: true
+          description: Filter by assessment types
         - name: tagIds[]
           in: query
           schema:
             type: array
             items:
               type: integer
-          required: false
           explode: true
+          description: Filter by tag IDs
       responses:
-        '400':
-          description: 'Failed to parse query parameters'
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ValidationProblemDetails'
-                example:
-                  type: 'https://synack.com/probs/invalid_query_parameters'
-                  title: 'Your query parameters did not validate'
-                  organization: 'organizations/orguid123'
-                  invalidParams:
-                    - name: 'sort'
-                      reason: 'sort must be one of: name, created_at, pending_test_count, scheduled_test_count, active_test_count, paused_test_count, completed_test_count, total_vulnerability_count'
-                    - name: 'sortDir'
-                      reason: 'sortDir must be one of: DESC, ASC'
-                    - name: 'page'
-                      reason: 'page must be a positive integer value'
-                    - name: 'perPage'
-                      reason: 'perPage cannot be larger than 20'
-                    - name: 'types[]'
-                      reason: 'types[] values must be one of: web, host, api, mobile'
-                    - name: 'tagIds[]'
-                      reason: 'Valid tagIds[] values are positive integers'
         '200':
-          description: 'Succesfully returning a filtered list of assessments'
+          description: Successfully retrieved assessments
           content:
             application/json:
               schema:
@@ -169,124 +553,40 @@ paths:
                   assessments:
                     type: array
                     items:
-                      type: object
-                      required:
-                        - uid
-                        - name
-                        - createdAt
-                        - type
-                        - testCounts
-                        - vulnerabilityCount
-                      properties:
-                        uid:
-                          type: string
-                          example: 'assessmentuid921'
-                        name:
-                          type: string
-                          example: 'My favourite assessment'
-                        createdAt:
-                          type: string
-                          format: date-time
-                        type:
-                          type: string
-                          example: 'Web'
-                        testCounts:
-                          type: object
-                          required:
-                            - pending
-                            - scheduled
-                            - active
-                            - paused
-                            - completed
-                          example:
-                            pending: 1
-                            scheduled: 2
-                            active: 0
-                            paused: 1
-                            completed: 4
-                          properties:
-                            pending:
-                              type: integer
-                              minimum: 0
-                            scheduled:
-                              type: integer
-                              minimum: 0
-                            active:
-                              type: integer
-                              minimum: 0
-                            paused:
-                              type: integer
-                              minimum: 0
-                            completed:
-                              type: integer
-                              minimum: 0
-                        vulnerabilityCount:
-                          type: integer
-                          minimum: 0
-                          example: 13
+                      $ref: '#/components/schemas/Assessment'
                   metadata:
                     type: object
                     required:
                       - pagination
                     properties:
                       pagination:
-                        type: object
-                        required:
-                          - total
-                          - page
-                          - perPage
-                          - totalPages
-                          - first
-                          - last
-                          - self
-                        example:
-                          total: 116
-                          page: 3
-                          perPage: 20
-                          totalPages: 6
-                          first: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=1'
-                          last: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=6'
-                          self: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=3'
-                          prev: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=2'
-                          next: 'https://baseurl/api/v2/organizations/orguid123/assessments?tagIds[]=0&page=4'
-                        properties:
-                          total:
-                            type: integer
-                            minimum: 0
-                          page:
-                            type: integer
-                            minimum: 0
-                          perPage:
-                            type: integer
-                            minimum: 0
-                          totalPages:
-                            type: integer
-                            minimum: 0
-                          first:
-                            type: string
-                            format: uri
-                          last:
-                            type: string
-                            format: uri
-                          self:
-                            type: string
-                            format: uri
-                          prev:
-                            type: string
-                            format: uri
-                          next:
-                            type: string
-                            format: uri
+                        $ref: '#/components/schemas/PaginationMetadata'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Organization not found
+
     post:
       operationId: createOrganizationAssessment
-      description: |
-        Creates a new assessment for an organization
+      summary: Create a new assessment
+      description: Creates a new assessment for an organization
+      tags:
+        - Assessments
       parameters:
         - name: organizationUid
           in: path
+          required: true
           schema:
             type: string
-          required: true
+          description: The unique identifier of the organization
       requestBody:
         required: true
         content:
@@ -303,20 +603,27 @@ paths:
               properties:
                 name:
                   type: string
+                  description: Name of the assessment
                 description:
                   type: string
+                  description: Description of the assessment
                 authenticationSelfRegistrationEnabled:
                   type: boolean
+                  description: Whether self-registration is enabled
                 orgListingGroupId:
                   type: integer
+                  description: ID of the organization listing group
                 gatewayId:
                   type: string
+                  description: Gateway ID for the assessment
                 categoryId:
                   type: integer
+                  description: Category ID for the assessment
                 tagNames:
                   type: array
                   items:
                     type: string
+                  description: Names of tags to associate with the assessment
                 ownerContactsAttributes:
                   type: array
                   items:
@@ -324,6 +631,7 @@ paths:
                     properties:
                       userId:
                         type: string
+                  description: Owner contact attributes
                 files:
                   type: array
                   items:
@@ -331,6 +639,7 @@ paths:
                     properties:
                       signedId:
                         type: string
+                  description: File attachments
                 assets:
                   type: array
                   items:
@@ -338,9 +647,10 @@ paths:
                     properties:
                       uid:
                         type: string
+                  description: Asset UIDs for the assessment
       responses:
         '201':
-          description: 'Assessment was created successfully'
+          description: Assessment created successfully
           content:
             application/json:
               schema:
@@ -349,111 +659,46 @@ paths:
                   - assessment
                 properties:
                   assessment:
-                    type: object
-                    required:
-                      - uid
-                      - name
-                      - description
-                      - createdAt
-                      - updatedAt
-                      - tags
-                      - ownerContacts
-                    properties:
-                      uid:
-                        type: string
-                        example: 'assessmentuid921'
-                      name:
-                        type: string
-                        example: 'My favourite assessment'
-                      createdAt:
-                        type: string
-                        format: date-time
-                      updatedAt:
-                        type: string
-                        format: date-time
-                      tags:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                      ownerContacts:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                            - id
-                            - name
-                            - email
-                          properties:
-                            id:
-                              type: integer
-                            name:
-                              type: string
-                            email:
-                              type: string
+                    $ref: '#/components/schemas/Assessment'
         '400':
-          description: 'Invalid parameters'
+          description: Invalid parameters
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ValidationProblemDetails'
-              example:
-                type: 'https://synack.com/probs/invalid_parameters'
-                title: 'Your query parameters did not validate'
-                organization: 'organizations/orguid123'
-                invalidParams:
-                  - name: 'name'
-                    reason: 'name is required'
-                  - name: 'orgListingGroupId'
-                    reason: 'orgListingGroupId is required'
-                  - name: 'categoryId'
-                    reason: 'categoryId is required'
-                  - name: 'authenticationSelfRegistrationEnabled'
-                    reason: 'authenticationSelfRegistrationEnabled must be a boolean value'
-                  - name: 'assets'
-                    reason: 'At least one asset is required'
-                  - name: 'ownerContactsAttributes'
-                    reason: 'At least one ownerContactsAttribute is required'
         '422':
-          description: 'Invalid operation'
+          description: Invalid operation
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-              example:
-                type: 'https://synack.com/probs/operation_not_valid'
-                title: 'Invalid operation'
-                detail: 'Record invalid'
-                organization: 'organizations/orguid123'
         '500':
-          description: 'Internal server error'
+          description: Internal server error
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-              example:
-                type: 'https://synack.com/probs/internal_server_error'
-                title: 'Internal server error'
-                detail: 'An error occurred when creating the assessment. Please try again.'
-                organization: 'organizations/orguid123'
+
   /v2/organizations/{organizationUid}/assessments/{assessmentUid}/tests:
     post:
       operationId: createAssessmentTest
-      description: |
-        Create a new test for an assessment
+      summary: Create a test for an assessment
+      description: Create a new test for a specific assessment
+      tags:
+        - Tests
       parameters:
         - name: organizationUid
           in: path
+          required: true
           schema:
             type: string
-          required: true
+          description: The unique identifier of the organization
         - name: assessmentUid
           in: path
+          required: true
           schema:
             type: string
-          required: true
+          description: The unique identifier of the assessment
       requestBody:
         required: true
         content:
@@ -466,17 +711,17 @@ paths:
               properties:
                 name:
                   type: string
+                  description: Name of the test
                 testPlan:
                   type: string
-                  enum:
-                    - Synack365
-                    - Synack90
-                    - Synack14
+                  enum: [Synack365, Synack90, Synack14]
+                  description: Test plan type
                 testObjective:
                   type: string
+                  description: Objective of the test
       responses:
         '201':
-          description: 'Test was created successfully'
+          description: Test created successfully
           content:
             application/json:
               schema:
@@ -485,45 +730,867 @@ paths:
                   - test
                 properties:
                   test:
-                    type: object
-                    required:
-                      - name
-                      - testObjective
-                    properties:
-                      name:
-                        type: string
-                      testObjective:
-                        type: string
+                    $ref: '#/components/schemas/Test'
         '400':
-          description: 'Failed to parse parameters'
+          description: Failed to parse parameters
           content:
             application/problem+json:
               schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '404':
+          description: Assessment not found
+
+  /v2/organizations/{organizationUid}/assessments/{assessmentUid}/stats:
+    get:
+      operationId: getAssessmentStats
+      summary: Get assessment statistics
+      description: Retrieve statistics for a specific assessment
+      tags:
+        - Assessments
+      parameters:
+        - name: organizationUid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the organization
+        - name: assessmentUid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the assessment
+      responses:
+        '200':
+          description: Assessment statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentStats'
+        '404':
+          description: Assessment not found
+
+  # V1 API - Listings/Assessments
+  /v1/assessments:
+    get:
+      operationId: getAssessments
+      summary: Get assessments (V1)
+      description: Retrieve a list of assessments for the current user's organization
+      tags:
+        - Assessments
+      parameters:
+        - name: assessment_group_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by assessment group ID
+      responses:
+        '200':
+          description: Assessments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assessment'
+        '400':
+          description: Bad request
+
+  /v1/assessments/{id}:
+    get:
+      operationId: getAssessment
+      summary: Get a specific assessment (V1)
+      description: Retrieve details of a specific assessment
+      tags:
+        - Assessments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Assessment ID
+      responses:
+        '200':
+          description: Assessment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assessment'
+        '404':
+          description: Assessment not found
+
+  /v1/assessments/{id}/testing_hours:
+    get:
+      operationId: getAssessmentTestingHours
+      summary: Get testing hours for an assessment
+      description: Retrieve testing hours statistics for a specific assessment
+      tags:
+        - Assessments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Assessment ID
+      responses:
+        '200':
+          description: Testing hours retrieved successfully
+          content:
+            application/json:
+              schema:
                 type: object
-                required:
-                  - type
-                  - title
-                  - organization
-                  - assessment
-                  - invalidParams
                 properties:
-                  type:
+                  stats_total:
+                    type: integer
+                  from:
                     type: string
-                  title:
+                    format: date-time
+                  to:
                     type: string
-                  organization:
+                    format: date-time
+
+  # V1 API - Vulnerabilities
+  /v1/vulnerabilities:
+    get:
+      operationId: getVulnerabilities
+      summary: Get vulnerabilities
+      description: Retrieve a paginated list of vulnerabilities with filtering options
+      tags:
+        - Vulnerabilities
+      parameters:
+        - name: filter[search]
+          in: query
+          schema:
+            type: string
+          description: Search term for vulnerabilities
+        - name: filter[status_id]
+          in: query
+          schema:
+            type: integer
+          description: Filter by vulnerability status ID
+        - name: filter[updated_within]
+          in: query
+          schema:
+            type: integer
+          description: Filter by vulnerabilities updated within specified seconds
+        - name: filter[updated_since]
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter by vulnerabilities updated since specified date
+        - name: filter[include_attachments]
+          in: query
+          schema:
+            type: boolean
+          description: Include vulnerability attachments
+        - name: page[number]
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: page[size]
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 50
+          description: Page size
+      responses:
+        '200':
+          description: Vulnerabilities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vulnerability'
+        '400':
+          description: Bad request
+
+  /v1/vulnerabilities/{id}:
+    get:
+      operationId: getVulnerability
+      summary: Get a specific vulnerability
+      description: Retrieve details of a specific vulnerability
+      tags:
+        - Vulnerabilities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      responses:
+        '200':
+          description: Vulnerability retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vulnerability'
+        '404':
+          description: Vulnerability not found
+
+    patch:
+      operationId: updateVulnerability
+      summary: Update a vulnerability
+      description: Update a specific vulnerability's status or tags
+      tags:
+        - Vulnerabilities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status_id:
+                  type: integer
+                  description: New vulnerability status ID
+                tags:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of tag IDs
+                tag_list:
+                  type: array
+                  items:
                     type: string
-                  assessment:
-                    type: string
-                  invalidParams:
-                    type: array
-                    items:
-                      type: object
-                      required:
-                        - name
-                        - reason
-                      properties:
-                        name:
-                          type: string
-                        reason:
-                          type: string
+                  description: Array of tag names
+      responses:
+        '200':
+          description: Vulnerability updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vulnerability'
+        '400':
+          description: Bad request
+        '404':
+          description: Vulnerability not found
+        '422':
+          description: Unprocessable entity
+
+  # V1 API - Suspected Vulnerabilities
+  /v1/suspected_vulnerabilities:
+    get:
+      operationId: getSuspectedVulnerabilities
+      summary: Get suspected vulnerabilities
+      description: Retrieve a paginated list of suspected vulnerabilities
+      tags:
+        - Suspected Vulnerabilities
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 50
+          description: Items per page
+        - name: order_by
+          in: query
+          schema:
+            type: string
+            enum: [created_at, last_detected_at, cvss_base]
+            default: last_detected_at
+          description: Field to order by
+        - name: order_direction
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+          description: Order direction
+        - name: severities
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by severities
+        - name: statuses
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by statuses
+        - name: show_expired
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include expired suspected vulnerabilities
+      responses:
+        '200':
+          description: Suspected vulnerabilities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SuspectedVulnerability'
+        '400':
+          description: Bad request
+
+  /v1/suspected_vulnerabilities/{id}:
+    get:
+      operationId: getSuspectedVulnerability
+      summary: Get a specific suspected vulnerability
+      description: Retrieve details of a specific suspected vulnerability
+      tags:
+        - Suspected Vulnerabilities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Suspected vulnerability ID
+      responses:
+        '200':
+          description: Suspected vulnerability retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuspectedVulnerability'
+        '404':
+          description: Suspected vulnerability not found
+
+    patch:
+      operationId: updateSuspectedVulnerability
+      summary: Update a suspected vulnerability
+      description: Update a specific suspected vulnerability's status
+      tags:
+        - Suspected Vulnerabilities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Suspected vulnerability ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vulnerability_status_id
+              properties:
+                vulnerability_status_id:
+                  type: integer
+                  description: New vulnerability status ID
+      responses:
+        '200':
+          description: Suspected vulnerability updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuspectedVulnerability'
+        '400':
+          description: Bad request
+        '404':
+          description: Suspected vulnerability not found
+
+  # V1 API - Vulnerability Comments
+  /v1/vulnerabilities/{vulnerability_id}/comments:
+    get:
+      operationId: getVulnerabilityComments
+      summary: Get vulnerability comments
+      description: Retrieve comments for a specific vulnerability
+      tags:
+        - Comments
+      parameters:
+        - name: vulnerability_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      responses:
+        '200':
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '404':
+          description: Vulnerability not found
+
+    post:
+      operationId: createVulnerabilityComment
+      summary: Create a vulnerability comment
+      description: Create a new comment for a specific vulnerability
+      tags:
+        - Comments
+      parameters:
+        - name: vulnerability_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Comment text
+                type:
+                  type: string
+                  description: Comment type
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Bad request
+        '404':
+          description: Vulnerability not found
+
+  # V1 API - Vulnerability Patch Verifications
+  /v1/vulnerabilities/{vulnerability_id}/patch_verifications:
+    get:
+      operationId: getVulnerabilityPatchVerifications
+      summary: Get vulnerability patch verifications
+      description: Retrieve patch verification requests for a specific vulnerability
+      tags:
+        - Patch Verifications
+      parameters:
+        - name: vulnerability_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      responses:
+        '200':
+          description: Patch verifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatchVerification'
+        '404':
+          description: Vulnerability not found
+
+    post:
+      operationId: createVulnerabilityPatchVerification
+      summary: Create a vulnerability patch verification
+      description: Create a new patch verification request for a specific vulnerability
+      tags:
+        - Patch Verifications
+      parameters:
+        - name: vulnerability_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vulnerability ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: Patch verification message
+      responses:
+        '201':
+          description: Patch verification created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchVerification'
+        '400':
+          description: Bad request
+        '404':
+          description: Vulnerability not found
+
+  # V1 API - Users
+  /v1/users/whoami:
+    get:
+      operationId: getCurrentUser
+      summary: Get current user information
+      description: Retrieve information about the currently authenticated user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  # V1 API - Assessment Groups
+  /v1/assessment_groups:
+    get:
+      operationId: getAssessmentGroups
+      summary: Get assessment groups
+      description: Retrieve a list of assessment groups
+      tags:
+        - Assessment Groups
+      responses:
+        '200':
+          description: Assessment groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssessmentGroup'
+        '401':
+          description: Unauthorized
+
+  /v1/assessment_groups/{id}:
+    get:
+      operationId: getAssessmentGroup
+      summary: Get a specific assessment group
+      description: Retrieve details of a specific assessment group
+      tags:
+        - Assessment Groups
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Assessment group ID
+      responses:
+        '200':
+          description: Assessment group retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentGroup'
+        '404':
+          description: Assessment group not found
+
+  # V1 API - Vulnerability Tags
+  /v1/vulnerability_tags:
+    get:
+      operationId: getVulnerabilityTags
+      summary: Get vulnerability tags
+      description: Retrieve a list of vulnerability tags
+      tags:
+        - Tags
+      responses:
+        '200':
+          description: Vulnerability tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '401':
+          description: Unauthorized
+
+    post:
+      operationId: createVulnerabilityTag
+      summary: Create a vulnerability tag
+      description: Create a new vulnerability tag
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Name of the tag
+      responses:
+        '201':
+          description: Tag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Bad request
+
+    patch:
+      operationId: updateVulnerabilityTag
+      summary: Update a vulnerability tag
+      description: Update an existing vulnerability tag
+      tags:
+        - Tags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Tag ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New name for the tag
+      responses:
+        '200':
+          description: Tag updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Bad request
+        '404':
+          description: Tag not found
+
+    delete:
+      operationId: deleteVulnerabilityTag
+      summary: Delete a vulnerability tag
+      description: Delete a vulnerability tag
+      tags:
+        - Tags
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Tag ID
+      responses:
+        '204':
+          description: Tag deleted successfully
+        '404':
+          description: Tag not found
+
+  # V1 API - Vulnerability Statuses
+  /v1/vulnerability_statuses:
+    get:
+      operationId: getVulnerabilityStatuses
+      summary: Get vulnerability statuses
+      description: Retrieve a list of available vulnerability statuses
+      tags:
+        - Vulnerability Statuses
+      responses:
+        '200':
+          description: Vulnerability statuses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    description:
+                      type: string
+        '401':
+          description: Unauthorized
+
+  # Client API - Tags
+  /listings/{id}/add_tag:
+    post:
+      operationId: addListingTag
+      summary: Add tag to a listing
+      description: Add a tag to a specific listing
+      tags:
+        - Listings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Listing ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tag_id
+              properties:
+                tag_id:
+                  type: integer
+                  description: ID of the tag to add
+      responses:
+        '200':
+          description: Tag added successfully
+        '400':
+          description: Invalid request
+        '404':
+          description: Tag or listing not found
+
+  /listings/{id}/remove_tag:
+    post:
+      operationId: removeListingTag
+      summary: Remove tag from a listing
+      description: Remove a tag from a specific listing
+      tags:
+        - Listings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Listing ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tag_id
+              properties:
+                tag_id:
+                  type: integer
+                  description: ID of the tag to remove
+      responses:
+        '200':
+          description: Tag removed successfully
+        '400':
+          description: Invalid request
+        '404':
+          description: Tag or listing not found
+
+  /listings_tags/{listing_id}:
+    get:
+      operationId: getListingTags
+      summary: Get tags for a listing
+      description: Retrieve all tags associated with a specific listing
+      tags:
+        - Listings
+      parameters:
+        - name: listing_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Listing ID
+      responses:
+        '200':
+          description: Tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+          headers:
+            X-Pagination:
+              schema:
+                type: string
+              description: Pagination metadata as JSON string
+        '404':
+          description: Listing not found
+
+  /tag:
+    post:
+      operationId: createTag
+      summary: Create a tag
+      description: Create a new tag
+      tags:
+        - Tags
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Name of the tag
+      responses:
+        '201':
+          description: Tag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Invalid request
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - ApiKeyAuth: []
+
+tags:
+  - name: Assessments
+    description: Operations related to security assessments
+  - name: Tests
+    description: Operations related to security tests
+  - name: Vulnerabilities
+    description: Operations related to security vulnerabilities
+  - name: Suspected Vulnerabilities
+    description: Operations related to suspected vulnerabilities
+  - name: Comments
+    description: Operations related to comments
+  - name: Patch Verifications
+    description: Operations related to patch verifications
+  - name: Users
+    description: Operations related to users
+  - name: Assessment Groups
+    description: Operations related to assessment groups
+  - name: Tags
+    description: Operations related to tags
+  - name: Vulnerability Statuses
+    description: Operations related to vulnerability statuses
+  - name: Listings
+    description: Operations related to listings
