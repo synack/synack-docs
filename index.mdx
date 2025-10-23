@@ -3,95 +3,19 @@ title: "Introduction"
 description: "Welcome to the Synack Enterprise API"
 ---
 
-## Setting up
+Welcome to the Synack API Documentation Portal. The Synack API enables programmatic access to Synack databases by 3rd party applications. Sample use cases include retrieving vulnerabilities found by Synack testing, adding assets to the Synack platform, managing Synack users, and more.
 
-Get your documentation site up and running in minutes.
+The Synack API is a RESTful service that allows retrieving or adding data from the Synack platform. Valid requests to the API return a 200 OK response in JSON format. In order to prevent unauthorized access, a valid API token needs to be supplied via the Authorization header.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+> Note: the permissions of the Synack User who generates the token apply. We recommend that your Synack Admin generates the token, so that data for all Synack Assessments and Vulnerabilities in the Organization are accessible to API requests. If a User with a different role generates the API token, data available to API requests will match the data which the user who generated the API Key sees in the Synack Portal.
 
-## Make it yours
+To generate the token, in the Synack Client portal go to Settings -> API -> Tokens. In the ‘IPv4 Address’ field we recommend using the * wildcard, however if a consistent source IP address for API requests is known then this can be specified. Optionally, set an ‘Expires At’ date for the Token.  
 
-Design a docs site that looks great and empowers your users.
+For details of available Synack API endpoints and their functions, please consult the ‘API Reference’ section of this API Portal. However, as an introduction, here is one example of how to fetch all exploitable vulnerabilities for a Synack organization.
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+```bash
+# e.g. to fetch all vulnerabilities (paged)
+curl -k -H 'Authorization: Bearer YOUR_TOKEN_GOES_HERE' https://api.synack.com/v1/vulnerabilities
+```
 
-## Create beautiful pages
 
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>

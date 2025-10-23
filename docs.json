@@ -16,33 +16,7 @@
           {
             "group": "Getting started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "index"
             ]
           }
         ]
@@ -51,12 +25,20 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "Asset Management",
+            "group": "Asset Management API",
             "openapi": "asset-v2-openapi.yaml"
           },
           {
-            "group": "Assessments",
+            "group": "Assessment Management API",
             "openapi": "monolith-openapi.yaml"
+          },
+          {
+            "group": "Tagging API",
+            "openapi": "tagging-openapi.yaml"
+          },
+          {
+            "group": "Query API",
+            "openapi": "streaming-openapi.yaml"
           }
         ]
       }
@@ -67,11 +49,6 @@
           "anchor": "Documentation",
           "href": "https://mintlify.com/docs",
           "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
         }
       ]
     }

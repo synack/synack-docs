@@ -1,0 +1,1499 @@
+openapi: 3.0.3
+info:
+  title: Streaming Service API
+  description: API for streaming service
+  version: 1.38.1
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+
+servers:
+  - url: https://{environment}.synack.com/api/streaming
+    description: Streaming API v1
+    variables:
+      environment:
+        default: viper.ks-prod
+        enum:
+          - viper.ks-qa
+          - viper.ks-staging  
+          - viper.ks-prod
+  - url: http://localhost:8080/api/streaming # local development
+
+paths:
+  /v1/{org_uid}/assets/providers:
+    get:
+      summary: Returns list of asset providers
+      description: Get Asset Providers by Organization
+      operationId: getAssetProviders
+      tags:
+        - assetproviders
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of provider results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/seed_groups:
+    get:
+      summary: Returns list of seed groups by organization
+      description: Get seed groups by organization
+      operationId: getAssetSeedGroups
+      tags:
+        - assetseedgroups
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of seed group results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/{asset_uid}/listings/tests/latest:
+    get:
+      summary: Returns list of latest tests details and statuses per organization and asset
+      description: Get latest tests details and statuses by organization UID and asset UID
+      operationId: getAssetListingsTestsLatest
+      tags:
+        - org_asset_listings_tests_latest
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: order_by
+          in: query
+          description: Order By [listing_codename, listing_name]
+          schema:
+            type: string
+            default: listing_codename
+            enum: [listing_codename, listing_name]
+        - name: order_direction
+          in: query
+          description: Order Direction [ASC DESC]
+          schema:
+            type: string
+            default: ASC
+            enum: [ASC, DESC]
+        - name: per_page
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: If provided, show the provided page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/{asset_uid}/ports:
+    get:
+      summary: Returns list of ports per organization and asset
+      description: Get Open Ports by Organization UID and Asset UID
+      operationId: getAssetPorts
+      tags:
+        - org_asset_ports
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+        - name: observed_state
+          in: query
+          description: Observed State [open closed]
+          schema:
+            type: string
+            default: open
+            enum: [open, closed]
+        - name: limit
+          in: query
+          description: Maximum number of port results to be returned
+          schema:
+            type: integer
+        - name: order_by
+          in: query
+          description: Order By [number service_name service_banner]
+          schema:
+            type: string
+            default: number
+            enum: [number, service_name, service_banner]
+        - name: order_direction
+          in: query
+          description: Order Direction [ASC DESC]
+          schema:
+            type: string
+            default: ASC
+            enum: [ASC, DESC]
+        - name: per_page
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: If provided, show the provided page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/{asset_uid}/suspected_vulns:
+    get:
+      summary: Returns list of suspected vulnerabilities on a given organization and asset uid
+      description: Get asset suspected vulnerabilities by organization and assets uid
+      operationId: getAssetSuspectedVulnerabilities
+      tags:
+        - org_asset_suspected_vulns
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+        - name: statuses[]
+          in: query
+          description: Suspected vulnerability status
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [in_triage, vulnerable, not_vulnerable, qualified, info_low]
+        - name: vuln_cvss[]
+          in: query
+          description: Suspected vulnerability CVSS range [0.0-0.0, 0.1-3.9, 4.0-6.9, 7.0-8.9, 9.0-10.0]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: include_expired
+          in: query
+          description: Include expired suspected vulnerabilities
+          schema:
+            type: boolean
+        - name: listing_uids[]
+          in: query
+          description: Listing uids
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: order_by
+          in: query
+          description: Order by [title, severity, location, created_at, status, listing_codename]
+          schema:
+            type: string
+            default: severity
+            enum: [title, severity, location, created_at, status, listing_codename]
+        - name: order_direction
+          in: query
+          description: Order direction [asc desc]
+          schema:
+            type: string
+            default: asc
+            enum: [asc, desc]
+        - name: per_page
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: If provided, show the provided page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/{asset_uid}/vulns:
+    get:
+      summary: Returns list of exploitable vulnerabilities on a given organization and asset uid
+      description: Get exploitable vulnerabilities by organization and assets uid
+      operationId: getAssetVulnerabilities
+      tags:
+        - org_asset_vulnerabilities
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+        - name: statuses[]
+          in: query
+          description: Vulnerability status
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: vuln_cvss[]
+          in: query
+          description: Vulnerability CVSS range [0.0-0.0, 0.1-3.9, 4.0-6.9, 7.0-8.9, 9.0-10.0]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: patch_verification[]
+          in: query
+          description: Patch verification status [requested failed cancelled verified blocked]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: order_by
+          in: query
+          description: Order by [title, severity, created_at, status]
+          schema:
+            type: string
+            default: severity
+            enum: [title, severity, created_at, status]
+        - name: order_direction
+          in: query
+          description: Order direction [asc desc]
+          schema:
+            type: string
+            default: asc
+            enum: [asc, desc]
+        - name: per_page
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: If provided, show the provided page
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/{asset_uid}/whois:
+    get:
+      summary: Returns `whois` data for a given asset UID
+      description: Get `whois` data by asset UID
+      operationId: getAssetWhois
+      tags:
+        - assetwhois
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/detail/{asset_uid}:
+    get:
+      summary: Returns Assets Details for a given Organization and Assets UID
+      description: Get Asset Details by Organization UID and Asset UID
+      operationId: getAssetDetails
+      tags:
+        - asset_details
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: asset_uid
+          in: path
+          description: Asset UID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/list:
+    get:
+      summary: Returns list of assets with aggregated data
+      description: Get Assets List by Organization
+      operationId: getAssetList
+      tags:
+        - assetlist
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: type[]
+          in: query
+          description: Assets Type [ip, fqdn, app]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [ip, fqdn, app]
+        - name: location
+          in: query
+          description: Assets Location [location] or Technologies [technologies]
+          schema:
+            type: string
+        - name: listing_uids[]
+          in: query
+          description: Listing UIDs
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: open_ports[]
+          in: query
+          description: Filter by Open Ports on an asset. If given 0 all assets that have been fingerprinted but no ports were found will be returned.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: providers[]
+          in: query
+          description: Providers
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: scan_status[]
+          in: query
+          description: Last Scan Status [in-progress failed finished new]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [in-progress, failed, finished, new]
+        - name: test_statuses[]
+          in: query
+          description: Last Test Status [active scheduled completed paused_manually paused_by_outage_window]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [active, scheduled, completed, paused_manually, paused_by_outage_window]
+        - name: last_tested
+          in: query
+          description: Last Tested ['Last 30 days' 'Last 90 days' 'Last 180 days' 'Over 180 days' 'Never']
+          schema:
+            type: string
+            enum: ['Last 30 days', 'Last 90 days', 'Last 180 days', 'Over 180 days', 'Never']
+        - name: suspected_vuln_avg_cvss[]
+          in: query
+          description: Suspected Vulnerability CVSS Range [0.0-0.0, 0.1-3.9, 4.0-6.9, 7.0-8.9, 9.0-10.0]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: vuln_avg_cvss[]
+          in: query
+          description: Vulnerability CVSS Range [0.0-0.0, 0.1-3.9, 4.0-6.9, 7.0-8.9, 9.0-10.0]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: seed_groups[]
+          in: query
+          description: Seed Groups using seed group uid
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: origin[]
+          in: query
+          description: Origin [provided discovered]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [provided, discovered]
+        - name: lifecycle_state[]
+          in: query
+          description: Lifecycle State [confirmed unconfirmed ignored archived]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [confirmed, unconfirmed, ignored, archived]
+        - name: gateway_ids[]
+          in: query
+          description: Gateway IDs
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: gateway_names
+          in: query
+          description: Gateway Names
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: tag_uids[]
+          in: query
+          description: Tag UIDs
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: criticalities[]
+          in: query
+          description: Criticality [undefined low medium high]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [undefined, low, medium, high]
+        - name: scanned
+          in: query
+          description: Scanned assets [true false]
+          schema:
+            type: string
+            enum: [true, false]
+        - name: waf
+          in: query
+          description: WAF [detected not-detected]
+          schema:
+            type: string
+            enum: [detected, not-detected]
+        - name: reachability[]
+          in: query
+          description: Reachability [reachable blocked-by-waf unreachable http-status-code-4xx-5xx reachability-pending not-applicable not-determined]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [reachable, blocked-by-waf, unreachable, http-status-code-4xx-5xx, reachability-pending, not-applicable, not-determined]
+        - name: order_by
+          in: query
+          description: Order By [location provider scan_status test_status suspected_vuln_count vuln_count last_scan_status_ts last_test_status_ts suspected_vuln_avg_cvss vuln_avg_cvss software last_seen waf, created_at, criticality]
+          schema:
+            type: string
+            default: location
+            enum: [location, provider, scan_status, test_status, suspected_vuln_count, vuln_count, last_scan_status_ts, last_test_status_ts, suspected_vuln_avg_cvss, vuln_avg_cvss, software, last_seen, waf, created_at, criticality]
+        - name: order_direction
+          in: query
+          description: Order Direction [ASC DESC]
+          schema:
+            type: string
+            default: ASC
+            enum: [ASC, DESC]
+        - name: per_page
+          in: query
+          description: Maximum number of results to be returned
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: If provided, show the provided page
+          schema:
+            type: integer
+        - name: export
+          in: query
+          description: Export data [csv]
+          schema:
+            type: string
+            enum: [csv]
+        - name: columns[]
+          in: query
+          description: Columns to be returned
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: sources[]
+          in: query
+          description: Sources [provided fractalScan xpanse cloudEnumeration fingerprinter]
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [provided, fractalScan, xpanse, cloudEnumeration, fingerprinter]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/ports:
+    get:
+      summary: Returns list of asset ports
+      description: Get Asset Ports by Organization
+      operationId: getAssetPortsByOrg
+      tags:
+        - assetports
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: port_limit
+          in: query
+          description: Maximum number of port results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/assets/count:
+    get:
+      summary: Returns count of assets by type
+      description: Get Assets Count by Organization
+      operationId: getAssetsCount
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/assets/any_scan:
+    get:
+      summary: Returns last fingerprint scan date for assets
+      description: Get Returns last fingerprint scan date for assets matching the parameters provided
+      operationId: getLastAssetsScan
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return last scan for assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/assets/last_tested:
+    get:
+      summary: Returns the count of last tested assets by asset criticality
+      description: Get the count of last tested assets by asset criticality
+      operationId: getLastTestedCounts
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return counts of last tested assets by asset criticality that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/assets/latest:
+    get:
+      summary: Returns the 5 most recently created assets
+      description: returns the 5 most recently created assets ordered by descending creation date
+      operationId: getMostRecentlyAddedAssets
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/ips/vulnerable:
+    get:
+      summary: Returns ip address sorted by most vulnerable
+      description: Get Top vulnerable IPs by Organization
+      operationId: getTopVulnerableIPs
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/ports/unique:
+    get:
+      summary: Returns top-5 most unique (least-common) ports
+      description: The least frequently found open ports in the organization
+      operationId: getTopUniquePorts
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/ports/vulnerable:
+    get:
+      summary: Returns top-5 most vulnerable ports
+      description: Get top-5 most vulnerable ports ordered by average CVSS
+      operationId: getTopVulnerablePorts
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/metrics/vulnerabilities/exploitable:
+    get:
+      summary: Returns top-5 CISA known-exploitable vulnerabilities
+      description: Get top-5 CISA known-exploitable vulnerabilities.
+      operationId: getTopCISACVEs
+      tags:
+        - metrics
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: listing_uid
+          in: query
+          description: Listing UID. If `false` is provided, it will return count of assets that does not belong to any listing nor seed group
+          schema:
+            type: string
+        - name: seed_group_uid
+          in: query
+          description: Seed group UID.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of CISA CVEs results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/tags:
+    get:
+      summary: Returns list of tags per org
+      description: Get Tags by Organization
+      operationId: getTags
+      tags:
+        - tags
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search for tags
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: limit
+          in: query
+          description: Maximum number of tags results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/{org_uid}/assets/gateways:
+    get:
+      summary: Returns list of asset gateways
+      description: Get Asset Gateways by Organization
+      operationId: getAssetGateways
+      tags:
+        - assetgateways
+      parameters:
+        - name: org_uid
+          in: path
+          description: Organization UID
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of gateways results to be returned
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Bearer token is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/health:
+    get:
+      summary: Health check
+      description: get health
+      operationId: healthCheck
+      tags:
+        - health
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+        '500':
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  schemas:
+    Document:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Data'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error'
+        included:
+          type: array
+          items: {}
+        links:
+          $ref: '#/components/schemas/Links'
+        meta: {}
+
+    Data:
+      type: object
+      properties:
+        attributes: {}
+        id:
+          type: string
+        links:
+          $ref: '#/components/schemas/Links'
+        meta: {}
+        relationships:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Relationship'
+        type:
+          $ref: '#/components/schemas/ResourceType'
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        id:
+          type: string
+        source:
+          type: string
+        status:
+          type: integer
+        title:
+          type: string
+
+    Links:
+      type: object
+      properties:
+        next:
+          type: string
+        prev:
+          type: string
+
+    Relationship:
+      type: object
+      properties:
+        data: {}
+        links:
+          $ref: '#/components/schemas/Links'
+
+    ResourceType:
+      type: string
+      enum:
+        - asset_list
+        - assets_counts
+        - asset_details
+        - asset_whois
+        - asset_ports
+        - asset_providers
+        - asset_seed_groups
+        - health_check
+        - org_asset_ports
+        - org_asset_suspected_vulns
+        - org_asset_vulns
+        - org_asset_listings_tests_latest
+        - top_vulnerable_ports
+        - top_unique_ports
+        - most_recently_added_assets
+        - top_cisa_cves
+        - top_vulnerable_ips
+        - asset_gateways
+        - tags
+        - last_tested_counts
+        - last_assets_scan
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: [] 
+

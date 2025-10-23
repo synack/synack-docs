@@ -1,0 +1,652 @@
+openapi: 3.0.3
+info:
+  title: Tagging 
+  description: RESTful API for tagging entities. 
+  version: 0.1.0
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+tags:
+  - name: status
+    description: Various ping and health endpoints
+  - name: tagging
+    description: Tagging operations
+servers:
+  - url: https://{platform}.ks-qa.synack.com/api/tagging/v1.0
+    variables:
+      platform:
+        default: client
+        enum:
+          - client
+          - boss
+  - url: https://{platform}.staging.synack.com/api/tagging/v1.0
+    variables:
+      platform:
+        default: client
+        enum:
+          - client
+          - boss
+  - url: https://{platform}.synack.com/api/tagging/v1.0
+    variables:
+      platform:
+        default: client
+        enum:
+          - client
+          - boss
+  - url: http://localhost:4444/api/tagging/v1.0
+
+paths:
+  /v1.0/organizations/{orgUid}/tags:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+    post:
+      operationId: postTags
+      tags:
+        - tagging
+      description: |
+        Create new tags. 
+        409 Conflict is logged as warn if the name matches the name of a tag that already exists in a given org uid.
+      requestBody:
+        description: Tags to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTags'
+      responses:
+        "201":
+          $ref: '#/components/responses/PaginatedTagsResponse'
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - tag_gw
+            - tag_gr
+            - tag_ow
+            - tag_or
+            - tag_lw
+            - tag_lr
+            - asset_gw
+            - asset_gr
+            - asset_boss_ow
+            - asset_client_ow
+            - asset_or
+            - asset_boss_lw
+            - asset_client_lw
+            - asset_lr
+
+    delete:
+      operationId: deleteTags
+      tags:
+        - tagging
+      description: >
+        Deletes tags.
+      requestBody:
+        description: Tags to delete.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTags'
+      responses:
+        "204":
+          $ref: '#/components/responses/204NoContent'
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - tag_gw
+            - tag_ow
+            - asset_gw
+            - asset_boss_ow
+            - asset_client_ow
+    patch:
+      operationId: patchTags
+      tags:
+        - tagging
+      description: >
+        Attach/detach entities to/from org uids and/or tag uids.
+      requestBody:
+        description: Tags to patch.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTags'
+      responses:
+        "204":
+          $ref: '#/components/responses/204NoContent'
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - tag_gw
+            - tag_gr
+            - tag_ow
+            - tag_or
+            - tag_lw
+            - tag_lr
+            - asset_gw
+            - asset_gr
+            - asset_boss_ow
+            - asset_client_ow
+            - asset_or
+            - asset_boss_lw
+            - asset_client_lw
+            - asset_lr
+
+  /v1.0/organizations/{orgUid}/tags/{tagUid}:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+      - $ref: '#/components/parameters/TagUIDPath'
+    put:
+      operationId: putTags
+      tags:
+        - tagging
+      description: >
+        Updates tag name by tag uid.
+      requestBody:
+        description: Update tag's name
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTag'
+      responses:
+        "204":
+          $ref: "#/components/responses/204NoContent"
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "404":
+          $ref: "#/components/responses/404NotFound"
+        "409":
+          $ref: "#/components/responses/409Conflict"
+        "412":
+          $ref: "#/components/responses/412PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - tag_gw
+            - tag_ow
+            - asset_gw
+            - asset_boss_ow
+            - asset_client_ow
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "login.synack.com"
+          scopes:
+            tag_or: Grants organization-level to read tags.
+            tag_ow: Grants organization-level to create or modify tags.
+            tag_gr: Grants global-level to read tags.
+            tag_gw: Grants global-level to create or modify tags.
+
+  parameters:
+    OrganizationUIDPath:
+      name: orgUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/OrgUID'
+      required: true
+      description: Unique identifier for an organization group.
+    EntityUIDPath:
+      name: entityUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/UID'
+      required: true
+      description: Unique identifier for an entity.
+    TagUIDPath:
+      name: tagUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/TagUID'
+      required: true
+      description: Unique identifier for a tag.
+    PerPageQuery:
+      name: perPage
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 5000
+      required: false
+      description: >
+        Requested page size for pagination. A server-selected default of 100 will
+        be used when no perPage is requested via query parameter.
+    PageQuery:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      required: false
+      description: >
+        Page to retrieve in paginated response. A server-selected default of 1 will
+        be used when no page is requested via query parameter.
+    SortQuery:
+      name: sort
+      in: query
+      schema:
+        type: string
+      required: false
+      description: Name of the property the items in the response should be sorted by.
+    SortDirQuery:
+      name: sortDir
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: asc
+      required: false
+      description: Direction of sort-order for items in the response.
+    IfMatch:
+      name: "If-Match"
+      in: header
+      required: true
+      description:
+        Used to prevent the lost-update problem. The operation will only
+        continue if the ETag of the resource matches the supplied value;
+        other was a 412 status will be returned. Provide a returned
+        ETag value or * to force the operation.
+      schema:
+        type: string
+        pattern: '^(?:\".*\"|\*)$'
+
+  headers:
+    ETag:
+      description: An identifier for a specific version of a resource
+      schema:
+        type: string
+        pattern: '^(?:W\/)?\".*\"$'
+    PaginationLimit:
+      description: Maximum number of items returned in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationCurrentPage:
+      description: Current page in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalPages:
+      description: Total number of pages in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalCount:
+      description: Total number of items in all pages of a paginated response.
+      schema:
+        format: int32
+        minimum: 1
+    Link:
+      description: Standard link header.
+      schema:
+        type: string
+
+  responses:
+    PaginatedTagsResponse:
+      description: Paginated tags.
+      headers:
+        "Pagination-Limit":
+          $ref: '#/components/headers/PaginationLimit'
+        "Pagination-Current-Page":
+          $ref: '#/components/headers/PaginationCurrentPage'
+        "Pagination-Total-Pages":
+          $ref: '#/components/headers/PaginationTotalPages'
+        "Pagination-Total-Count":
+          $ref: '#/components/headers/PaginationTotalCount'
+        "Link":
+          $ref: '#/components/headers/Link'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PageOfTags'
+    SingleTagResponse:
+      description: Representation of a tag resource in the response.
+      headers:
+        "ETag":
+          $ref: '#/components/headers/ETag'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tag'
+    204NoContent:
+      description: No content.
+    400BadRequest:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    401Unauthorized:
+      description: Unauthorized.
+    403Forbidden:
+      description: Forbidden
+    404NotFound:
+      description: Not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    409Conflict:
+      description: Conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    412PreconditionFailed:
+      description: Precondition Failed.
+    413RequestEntityTooLarge:
+      description:
+        Returned generally when the size of the request body is too large to process, or specifically when the request
+        contains too many items, typically in a bulk API operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    422EntityNotProcessable:
+      description: Entity Not Processable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    500InternalServerError:
+      description: Internal Server Error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    503ServiceUnavailable:
+      description: Service Unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    UID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      readOnly: true
+      description: Unique Identifier.
+
+    OrgUID:
+      type: string
+      pattern: "^[0-9a-z]{1,50}"
+      description: Unique identifier for an organization.
+
+    TagUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a tag.
+
+    TagName:
+      type: string
+      description: User-supplied name for this tag.
+
+    EntityUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for an entity.
+
+    EntityType:
+      type: string
+      enum:
+        - asset
+        - assessment
+        - seed
+        - seedGroup
+        - exploitableVulnerability
+        - suspectedVulnerability
+      description: Entity type
+
+    Entity:
+      allOf:
+        - type: object
+          required:
+            - uid
+            - entityType
+          properties:
+            uid:
+              $ref: '#/components/schemas/EntityUID'
+            entityType:
+              $ref: '#/components/schemas/EntityType'
+
+    PageOfTags:
+      type: object
+      properties:
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    Tags:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+
+    TagUIDs:
+      type: array
+      items:
+        $ref: '#/components/schemas/TagUID'
+
+    Entities:
+      type: array
+      items:
+        $ref: '#/components/schemas/Entity'
+
+    DelEntities:
+      type: array
+      items:
+        $ref: '#/components/schemas/EntityUID'
+
+    OrgUIDs:
+      type: array
+      items:
+        $ref: '#/components/schemas/OrgUID'
+
+    Tag:
+      allOf:
+        - type: object
+          required:
+            - uid
+            - name
+            - orgUid
+          properties:
+            uid:
+              $ref: '#/components/schemas/TagUID'
+            name:
+              $ref: '#/components/schemas/TagName'
+            orgUid:
+              $ref: '#/components/schemas/OrgUID'
+            entities:
+              $ref: '#/components/schemas/Entities'
+
+    NewTag:
+      allOf:
+        - type: object
+          required:
+            - name
+          properties:
+            name:
+              $ref: '#/components/schemas/TagName'
+            entities:
+              $ref: '#/components/schemas/Entities'
+
+    UpdateTag:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          $ref: '#/components/schemas/TagName'
+
+    NewTags:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewTag'
+
+    PatchTags:
+      type: object
+      required:
+        - uids
+      properties:
+        uids:
+          $ref: '#/components/schemas/TagUIDs'
+        addEntities:
+          $ref: '#/components/schemas/Entities'
+        delEntityUids:
+          $ref: '#/components/schemas/DelEntities'
+
+    DeleteTags:
+      type: object
+      required:
+        - uids
+      properties:
+        uids:
+          $ref: '#/components/schemas/TagUIDs'
+
+    ProblemDetails:
+      type: object
+      description: "See [RFC 7807: Problem Details for HTTP APIs](https://tools.ietf.org/html/rfc7807)"
+      properties:
+        type:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 511
+          description: HTTP Status code.
+          readOnly: true
+        detail:
+          type: string
+          description: Message detailing the problem.
+          readOnly: true
+        instance:
+          type: string
+          description: generated problem instance number to correlate with logs
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/FailedValidation'
+        failedValidations:
+          type: array
+          description: Array of indexed failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/IndexedFailedValidations'
+        maxBatchSize:
+            type: integer
+            description: Maximum processable batch size.
+            readOnly: true
+        batchSize:
+            type: integer
+            description: Batch size sent when batch is too large.
+            readOnly: true
+
+    ErrorResponse:
+      type: object
+      description: "Error response"
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: "X-Request-Id"
+        error:
+          type: string
+          readOnly: true
+          description: Message detailing the problem.
+
+    FailedValidation:
+      type: object
+      required:
+        - message
+      properties:
+        property:
+          type: string
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+
+    IndexedFailedValidations:
+      type: object
+      properties:
+        index:
+          type: integer
+          description:
+            Zero-based index indicating the which item in request containing an array of items has failed validation.
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/FailedValidation'
