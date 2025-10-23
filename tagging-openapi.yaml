@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Tagging 
-  description: RESTful API for tagging entities. 
+  description: RESTful API for tagging assets and other entities. 
   version: 0.1.0
   contact:
     name: Synack Engineering
@@ -46,6 +46,9 @@ paths:
       description: |
         Create new tags. 
         409 Conflict is logged as warn if the name matches the name of a tag that already exists in a given org uid.
+      x-mint:
+        metadata: 
+          title: Create Asset Tags
       requestBody:
         description: Tags to create.
         required: true
@@ -95,6 +98,9 @@ paths:
         - tagging
       description: >
         Deletes tags.
+      x-mint:
+        metadata:
+          title: Delete Asset Tags
       requestBody:
         description: Tags to delete.
         required: true
@@ -128,6 +134,9 @@ paths:
         - tagging
       description: >
         Attach/detach entities to/from org uids and/or tag uids.
+      x-mint:
+        metadata: 
+          title: Attach/Detach Tags to Assets.
       requestBody:
         description: Tags to patch.
         required: true
@@ -179,6 +188,10 @@ paths:
         - tagging
       description: >
         Updates tag name by tag uid.
+      x-mint:
+        metadata:
+          title:
+            Update Tag Name
       requestBody:
         description: Update tag's name
         required: true

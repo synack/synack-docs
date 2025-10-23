@@ -29,12 +29,12 @@
             "openapi": "asset-v2-openapi.yaml"
           },
           {
-            "group": "Assessment Management API",
-            "openapi": "monolith-openapi.yaml"
+            "group": "Asset Tagging API",
+            "openapi": "tagging-openapi.yaml"
           },
           {
-            "group": "Tagging API",
-            "openapi": "tagging-openapi.yaml"
+            "group": "Assessment API",
+            "openapi": "monolith-openapi.yaml"
           },
           {
             "group": "Query API",
@@ -42,16 +42,7 @@
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "logo/synack_light.svg",
