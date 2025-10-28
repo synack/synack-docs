@@ -35,15 +35,9 @@ tags:
   - name: webapps
     description: Web application assets.
 servers:
-  - url: https://{environment}.synack.com/api/asset
-    variables:
-      environment:
-        default: viper.ks-prod # Production GCP
-        enum:
-          - viper.ks-qa # QA GCP
-          - viper.ks-staging # Staging GCP
-          - viper.ks-prod # Production GCP
-  - url: http://localhost:1323/api/asset # local development
+  - url: https://client.synack.com/api/asset  #Production
+  - url: https://client.synack.us/api/asset   #FedRAMP (Medium)
+  
 paths:
   /v2/bulk/assets:
     post:
