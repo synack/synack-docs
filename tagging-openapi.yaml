@@ -13,7 +13,9 @@ tags:
     description: Tagging operations
 servers:
   - url: https://client.synack.com/api/tagging/v1.0
+    description: Commercial
   - url: https://client.synack.us/api/tagging/v1.0
+    description: FedRAMP (Medium)
 
 
 paths:
