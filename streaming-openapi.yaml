@@ -8,17 +8,11 @@ info:
     email: engineering@synack.com
 
 servers:
-  - url: https://{environment}.synack.com/api/streaming
-    description: Streaming API v1
-    variables:
-      environment:
-        default: viper.ks-prod
-        enum:
-          - viper.ks-qa
-          - viper.ks-staging  
-          - viper.ks-prod
-  - url: http://localhost:8080/api/streaming # local development
-
+  - url: https://api.synack.com/api/streaming
+    description: Commercial
+  - url: https://api.synack.us/api/streaming
+    description: FedRAMP (Medium)
+  
 paths:
   /v1/{org_uid}/assets/providers:
     get:
