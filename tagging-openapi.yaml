@@ -12,28 +12,9 @@ tags:
   - name: tagging
     description: Tagging operations
 servers:
-  - url: https://{platform}.ks-qa.synack.com/api/tagging/v1.0
-    variables:
-      platform:
-        default: client
-        enum:
-          - client
-          - boss
-  - url: https://{platform}.staging.synack.com/api/tagging/v1.0
-    variables:
-      platform:
-        default: client
-        enum:
-          - client
-          - boss
-  - url: https://{platform}.synack.com/api/tagging/v1.0
-    variables:
-      platform:
-        default: client
-        enum:
-          - client
-          - boss
-  - url: http://localhost:4444/api/tagging/v1.0
+  - url: https://client.synack.com/api/tagging/v1.0
+  - url: https://client.synack.us/api/tagging/v1.0
+
 
 paths:
   /v1.0/organizations/{orgUid}/tags:
