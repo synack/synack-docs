@@ -8,9 +8,9 @@ info:
     email: engineering@synack.com
 
 servers:
-  - url: https://api.synack.com/api/streaming
+  - url: https://client.synack.com/api/streaming
     description: Commercial
-  - url: https://api.synack.us/api/streaming
+  - url: https://client.synack.us/api/streaming
     description: FedRAMP (Medium)
   
 paths:
