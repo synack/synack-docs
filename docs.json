@@ -26,7 +26,25 @@
         "groups": [
           {
             "group": "Asset Management API",
-            "openapi": "asset-v2-openapi.yaml"
+            "openapi": "asset-v2-openapi.yaml",
+            "pages": [
+              "GET /v2/assets",
+              "POST /v2/assets",
+              "POST /v2/bulk/assets",
+              "GET /v2/assets/{assetUid}",
+              "PATCH /v2/assets/{assetUid}",
+              "GET /v2/assets/{assetUid}/ports/{portNumber}/{portProtocol}",
+              "GET /v2/assets/{assetUid}/whois",
+              "GET /v2/organizations/{organizationUid}/discovered-assets",
+              "POST /v2/bulk/assets/lifecycle-state:update",
+              "POST /v2/bulk/assets/criticality:update",
+              "GET /v2/assets/{assetUid}/related-assets",
+              "GET /v2/asset-stats",
+              "PUT /v2/listings/{listingUid}/assets/{assetUid}",
+              "DELETE /v2/listings/{listingUid}/assets/{assetUid}",
+              "PATCH /v2/listings/{listingUid}/assets",
+              "DELETE /v2/listings/{listingUid}/assets"
+            ]
           },
           {
             "group": "Asset Tagging API",

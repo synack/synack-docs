@@ -35,9 +35,10 @@ tags:
   - name: webapps
     description: Web application assets.
 servers:
-  - url: https://client.synack.com/api/asset  #Production
-  - url: https://client.synack.us/api/asset   #FedRAMP (Medium)
-  
+  - url: https://client.synack.com/api/asset
+    description: Commercial 
+  - url: https://client.synack.us/api/asset
+    description: FedRAMP (Medium)
 paths:
   /v2/bulk/assets:
     post:
@@ -53,6 +54,9 @@ paths:
         Bulk upserts array of assets and listing associations. Checks properties
         of assets for validity and returns 409 Conflict if rules are violated.
         Relationships can be upserted using the sourceRelationships property only.
+      x-mint:
+        metadata:
+          title: Bulk Create Assets
       requestBody:
         description: Supply Asset UID for the asset to upsert
         required: true
@@ -99,6 +103,9 @@ paths:
         - webapps
       description: >
         Bulk updates the asset life cycle property. Checks the validity of assets and returns 409 Conflict if rules are violated.
+      x-mint:
+        metadata:
+          title: Bulk Update Asset Lifecycle State 
       requestBody:
         description: Supply Organization UID, Asset UIDs for the assets to update, and the lifecycle state to update to.
         required: true
@@ -145,6 +152,9 @@ paths:
         - webapps
       description: >
         Bulk update the criticality of multiple assets.
+      x-mint:
+        metadata:
+          title: Bulk Update Asset Criticality
       requestBody:
         description: The Organization UID, Asset UIDs to be updated, and the criticality value to be set on the assets.
         required: true
@@ -188,6 +198,9 @@ paths:
       tags:
         - listings
       description: Upsert assignment of an asset to a listing.
+      x-mint:
+        metadata:
+          title: Add Asset to Assessment 
       requestBody:
         description: Properties of the assignment of an asset to a listing.
         content:
@@ -219,6 +232,9 @@ paths:
       tags:
         - listings
       description: Delete the assignment of an asset to a listing.
+      x-mint:
+        metadata:
+          title: Remove Asset from Assessment 
       responses:
         "204":
           $ref: "#/components/responses/204NoContent"
@@ -250,6 +266,9 @@ paths:
       description: Associate or disassociate zero or more assets from a listing.
         Allows the caller to provide lists of assets to add to and/or remove from
         being associated with a listing. Unknown assets are ignored.
+      x-mint:
+        metadata:
+          title: Add or Remove Multiple Assets to/from Asessment
       requestBody:
         description: Asset UIDs to add associations to and/or remove associations from the listing.
         content:
@@ -287,6 +306,9 @@ paths:
       tags:
         - listings
       description: Delete all the association of assets from a listing.
+      x-mint:
+        metadata:
+          title: Remove All Assets from Assessment
       responses:
         "204":
           $ref: "#/components/responses/204NoContent"
@@ -409,6 +431,9 @@ paths:
 
         Researcher users are restricted to only viewing credentials of in scope
         assets for listings to which they have been assigned.
+      x-mint:
+        metadata:
+          title: Get Assets
       parameters:
         - $ref: "#/components/parameters/OrganizationUIDQuery"
         - $ref: "#/components/parameters/ListingUIDQuery"
@@ -660,6 +685,9 @@ paths:
         - webapps
       description: >
         Creates an asset.
+      x-mint:
+        metadata:
+          title: Create Asset
       requestBody:
         description: Asset to create.
           If the asset is of cloud account type, only its metadata returned in
@@ -707,6 +735,9 @@ paths:
         - hosts
       description: >
         Retrieves the WHOIS data for a single asset.
+      x-mint:
+        metadata:
+          title: Get WHOIS for Asset
       responses:
         "200":
           $ref: "#/components/responses/WHOISResponse"
@@ -725,7 +756,7 @@ paths:
       description: >
         Adds the WHOIS data to a single asset.
       requestBody:
-        description: Whois data to add to asset.
+        description: WHOIS data to add to asset.
         required: true
         content:
           application/json:
@@ -756,6 +787,9 @@ paths:
       description: >
         Retrieves a single asset. If the user is a researcher, only the credentials they are authorized to access will be returned.
         If the asset is of cloud account type, only a user with asset_scan_gr scope can access its credential data.
+      x-mint:
+        metadata:
+          title: Get Asset
       parameters:
         - in: query
           name: userUid
@@ -794,6 +828,9 @@ paths:
         - webapps
       description: >
         Patches the properties of a single asset.
+      x-mint:
+        metadata:
+          title: Patch Asset
       requestBody:
         description: Asset properties to patch.
         required: true
@@ -864,7 +901,10 @@ paths:
       tags:
         - assets
       description: >
-        Returns all assets that share a relationship with the matched UID.
+        Returns all assets that share a relationship with the matched Asset UID.
+      x-mint:
+        metadata:
+          title: Get Related Assets
       parameters:
         - $ref: "#/components/parameters/AssetTypeQuery"
       responses:
@@ -1190,6 +1230,9 @@ paths:
         - ports
       description: >
         Retrieve a port for a host asset.
+      x-mint:
+        metadata:
+          title: Get Port for Host Asset 
       responses:
         "200":
           $ref: "#/components/responses/SinglePort"
@@ -2400,6 +2443,9 @@ paths:
         - webapps
       description: >
         Returns active assets under test (in scope for a listing) and total active assets for the supplied organization and listings.
+      x-mint:
+        metadata:
+          title: Get Asset Stats 
       parameters:
         - $ref: "#/components/parameters/SingleOrganizationUIDQuery"
         - $ref: "#/components/parameters/ListingUIDQuery"
@@ -2439,6 +2485,9 @@ paths:
 
         Additional query parameters generally restrict the resulting set of
         assets according to AND semantics.
+      x-mint:
+        metadata:
+          title: Get Discovered Assets 
       parameters:
         - $ref: "#/components/parameters/OrganizationUIDPath"
         - $ref: "#/components/parameters/ListingUIDQuery"
