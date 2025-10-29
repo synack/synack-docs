@@ -333,6 +333,7 @@ paths:
       - $ref: "#/components/parameters/OrganizationUIDPath"
       - $ref: "#/components/parameters/ListingUIDPath"
     patch:
+      x-excluded: true
       operationId: patchListingGateways
       tags:
         - listings
@@ -369,6 +370,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/ListingUIDPath"
     put:
+      x-excluded: true
       operationId: putListingAssetsResetScopeRules
       tags:
         - listings
@@ -749,6 +751,7 @@ paths:
             - asset_srt_lr
             - asset_scan_gr
     put:
+      x-excluded: true
       operationId: putWHOIS
       tags:
         - assets
@@ -859,6 +862,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteAsset
       tags:
         - assets
@@ -930,6 +934,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AssetUIDPath"
     get:
+      x-excluded: true
       operationId: getBurpTargetScopeForAsset
       tags:
         - assets
@@ -962,6 +967,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AssetUIDPath"
     get:
+      x-excluded: true
       operationId: getAssetScripts
       tags:
         - webapps
@@ -1005,6 +1011,7 @@ paths:
             - asset_gr
             - asset_or
     post:
+      x-excluded: true
       operationId: postAssetScript
       tags:
         - webapps
@@ -1049,6 +1056,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AssetUIDPath"
     get:
+      x-excluded: true
       operationId: getAssetCredentials
       tags:
         - webapps
@@ -1096,6 +1104,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/ScriptUIDPath"
     get:
+      x-excluded: true
       operationId: getAssetScript
       tags:
         - mobileapps
@@ -1122,6 +1131,7 @@ paths:
             - asset_or
             - asset_lr
     delete:
+      x-excluded: true
       operationId: deleteAssetScript
       tags:
         - mobileapps
@@ -1150,6 +1160,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     patch:
+      x-excluded: true
       operationId: patchAssetScript
       tags:
         - mobileapps
@@ -1191,6 +1202,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/ScriptUIDPath"
     get:
+      x-excluded: true
       operationId: getAssetScriptData
       tags:
         - mobileapps
@@ -1250,6 +1262,7 @@ paths:
             - asset_or
             - asset_lr
     put:
+      x-excluded: true
       operationId: putHostPort
       tags:
         - hosts
@@ -1297,6 +1310,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     patch:
+      x-excluded: true
       operationId: patchHostPort
       tags:
         - hosts
@@ -1337,6 +1351,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteHostPort
       tags:
         - hosts
@@ -1372,6 +1387,7 @@ paths:
       - $ref: "#/components/parameters/AssetUIDPath"
       - $ref: "#/components/parameters/ApplicationVersionPath"
     put:
+      x-excluded: true
       operationId: putApplicationBinary
       tags:
         - mobileapps
@@ -1409,6 +1425,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteApplicationBinary
       tags:
         - mobileapps
@@ -1439,6 +1456,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AssetUIDPath"
     get:
+      x-excluded: true
       operationId: getUserRoles
       tags:
         - mobileapps
@@ -1485,6 +1503,7 @@ paths:
             - asset_lr
             - asset_srt_lr
     post:
+      x-excluded: true
       operationId: postUserRole
       tags:
         - mobileapps
@@ -1531,6 +1550,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/UserRoleUIDPath"
     get:
+      x-excluded: true
       operationId: getUserRole
       tags:
         - mobileapps
@@ -1557,6 +1577,7 @@ paths:
             - asset_lr
             - asset_srt_lr
     patch:
+      x-excluded: true
       operationId: patchUserRole
       tags:
         - mobileapps
@@ -1596,6 +1617,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteUserRole
       tags:
         - mobileapps
@@ -1631,6 +1653,7 @@ paths:
       - $ref: "#/components/parameters/UserRoleUIDPath"
       - $ref: "#/components/parameters/ScriptUIDPath"
     patch:
+      x-excluded: true
       operationId: patchUserRoleScript
       tags:
         - mobileapps
@@ -1672,6 +1695,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/AssetUIDPath"
     get:
+      x-excluded: true
       operationId: getScopeRules
       tags:
         - hosts
@@ -1714,6 +1738,7 @@ paths:
             - asset_or
             - asset_srt_lr
     post:
+      x-excluded: true
       operationId: postScopeRule
       tags:
         - hosts
@@ -1757,6 +1782,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/ScopeRuleUIDPath"
     get:
+      x-excluded: true
       operationId: getScopeRule
       tags:
         - hosts
@@ -1782,6 +1808,7 @@ paths:
             - asset_or
             - asset_lr
     patch:
+      x-excluded: true
       operationId: patchScopeRule
       tags:
         - hosts
@@ -1822,6 +1849,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteScopeRule
       tags:
         - hosts
@@ -1856,6 +1884,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/UserRoleUIDPath"
     get:
+      x-excluded: true
       operationId: getUserRoleCredentials
       parameters:
         - $ref: "#/components/parameters/PerPageQuery"
@@ -1903,6 +1932,7 @@ paths:
             - asset_lr
             - asset_srt_lr
     post:
+      x-excluded: true
       operationId: postUserRoleCredential
       tags:
         - mobileapps
@@ -1948,6 +1978,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     patch:
+      x-excluded: true
       operationId: patchUserRoleCredentials
       tags:
         - mobileapps
@@ -1995,6 +2026,7 @@ paths:
             - asset_boss_lw
 
     delete:
+      x-excluded: true
       operationId: deleteUserRoleCredentials
       tags:
         - mobileapps
@@ -2029,6 +2061,7 @@ paths:
     parameters:
       - $ref: "#/components/parameters/CredentialUIDPath"
     delete:
+      x-excluded: true
       operationId: deleteUserRoleCredential
       tags:
         - mobileapps
@@ -2057,6 +2090,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     patch:
+      x-excluded: true
       operationId: patchUserRoleCredential
       tags:
         - credentials
@@ -2101,6 +2135,7 @@ paths:
       - $ref: "#/components/parameters/CredentialUIDPath"
       - $ref: "#/components/parameters/UserUIDPath"
     put:
+      x-excluded: true
       operationId: putUserRoleCredentialUser
       tags:
         - credentials
@@ -2137,6 +2172,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteUserRoleCredentialUser
       tags:
         - credentials
@@ -2187,6 +2223,7 @@ paths:
         required: true
         description: Unique identifier for a user.
     post:
+      x-excluded: true
       operationId: assignUserRoleCredentialsToUser
       tags:
         - mobileapps
@@ -2221,6 +2258,7 @@ paths:
 
   /v2/asset-relationships:
     post:
+      x-excluded: true
       operationId: postAssetRelationship
       tags:
         - asset-relationships
@@ -2258,6 +2296,7 @@ paths:
 
   /v2/asset-relationships/{assetRelationshipUid}:
     patch:
+      x-excluded: true
       operationId: patchAssetRelationship
       tags:
         - asset-relationships
@@ -2300,6 +2339,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteAssetRelationship
       tags:
         - asset-relationships
@@ -2330,6 +2370,7 @@ paths:
 
   /v2/external-relationships:
     post:
+      x-excluded: true
       operationId: postExternalRelationship
       tags:
         - external-relationships
@@ -2371,6 +2412,7 @@ paths:
 
   /v2/external-relationships/{assetRelationshipUid}:
     patch:
+      x-excluded: true
       operationId: patchExternalRelationship
       tags:
         - external-relationships
@@ -2405,6 +2447,7 @@ paths:
             - asset_client_lw
             - asset_boss_lw
     delete:
+      x-excluded: true
       operationId: deleteExternalRelationship
       tags:
         - external-relationships
@@ -2547,6 +2590,7 @@ paths:
 
   /v2/listing-webapps/{listingUid}:
     get:
+      x-excluded: true
       operationId: getWebApps
       tags:
         - webapps
@@ -2578,6 +2622,7 @@ paths:
 
   /v2/webapps/{assetUid}:
     get:
+      x-excluded: true
       operationId: getWebApp
       tags:
         - webapps
