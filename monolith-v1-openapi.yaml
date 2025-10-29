@@ -12,12 +12,8 @@ info:
 servers:
   - url: https://api.synack.com
     description: Commercial - V1 API
-  - url: https://client.synack.com/api
-    description: Commercial - V2 API
   - url: https://api.synack.us
     description: FedRAMP (Medium) - V1 API
-  - url: https://client.synack.us/api
-    description: FedRAMP (Medium) - V2 API
 
 components:
   securitySchemes:
@@ -455,311 +451,6 @@ components:
           format: date-time
 
 paths:
-  # V2 Client API - Assessments
-  /v2/organizations/{organizationUid}/assessments:
-    get:
-      operationId: getOrganizationAssessments
-      summary: Get assessments for an organization
-      description: Retrieve a paginated list of assessments for a specific organization with filtering and sorting options
-      tags:
-        - Assessments
-      parameters:
-        - name: organizationUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the organization
-        - name: sort
-          in: query
-          schema:
-            type: string
-            default: created_at
-            enum:
-              - name
-              - created_at
-              - pending_test_count
-              - scheduled_test_count
-              - active_test_count
-              - paused_test_count
-              - completed_test_count
-              - total_vulnerability_count
-          description: Field to sort by
-        - name: sortDir
-          in: query
-          schema:
-            type: string
-            default: desc
-            enum: [desc, asc]
-          description: Sort direction
-        - name: page
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number for pagination
-        - name: perPage
-          in: query
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 50
-            default: 10
-          description: Number of items per page
-        - name: search
-          in: query
-          schema:
-            type: string
-          description: Search term to filter assessments by name
-        - name: types[]
-          in: query
-          schema:
-            type: array
-            items:
-              type: string
-              enum: [web, host, api, mobile]
-          explode: true
-          description: Filter by assessment types
-        - name: tagIds[]
-          in: query
-          schema:
-            type: array
-            items:
-              type: integer
-          explode: true
-          description: Filter by tag IDs
-      responses:
-        '200':
-          description: Successfully retrieved assessments
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - assessments
-                  - metadata
-                properties:
-                  assessments:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Assessment'
-                  metadata:
-                    type: object
-                    required:
-                      - pagination
-                    properties:
-                      pagination:
-                        $ref: '#/components/schemas/PaginationMetadata'
-        '400':
-          description: Invalid query parameters
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ValidationProblemDetails'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden
-        '404':
-          description: Organization not found
-
-    post:
-      operationId: createOrganizationAssessment
-      summary: Create a new assessment
-      description: Creates a new assessment for an organization
-      tags:
-        - Assessments
-      parameters:
-        - name: organizationUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the organization
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-                - authenticationSelfRegistrationEnabled
-                - orgListingGroupId
-                - categoryId
-                - ownerContactsAttributes
-                - assets
-              properties:
-                name:
-                  type: string
-                  description: Name of the assessment
-                description:
-                  type: string
-                  description: Description of the assessment
-                authenticationSelfRegistrationEnabled:
-                  type: boolean
-                  description: Whether self-registration is enabled
-                orgListingGroupId:
-                  type: integer
-                  description: ID of the organization listing group
-                gatewayId:
-                  type: string
-                  description: Gateway ID for the assessment
-                categoryId:
-                  type: integer
-                  description: Category ID for the assessment
-                tagNames:
-                  type: array
-                  items:
-                    type: string
-                  description: Names of tags to associate with the assessment
-                ownerContactsAttributes:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      userId:
-                        type: string
-                  description: Owner contact attributes
-                files:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      signedId:
-                        type: string
-                  description: File attachments
-                assets:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      uid:
-                        type: string
-                  description: Asset UIDs for the assessment
-      responses:
-        '201':
-          description: Assessment created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - assessment
-                properties:
-                  assessment:
-                    $ref: '#/components/schemas/Assessment'
-        '400':
-          description: Invalid parameters
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ValidationProblemDetails'
-        '422':
-          description: Invalid operation
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-
-  /v2/organizations/{organizationUid}/assessments/{assessmentUid}/tests:
-    post:
-      operationId: createAssessmentTest
-      summary: Create a test for an assessment
-      description: Create a new test for a specific assessment
-      tags:
-        - Tests
-      parameters:
-        - name: organizationUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the organization
-        - name: assessmentUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the assessment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-                - testPlan
-              properties:
-                name:
-                  type: string
-                  description: Name of the test
-                testPlan:
-                  type: string
-                  enum: [Synack365, Synack90, Synack14]
-                  description: Test plan type
-                testObjective:
-                  type: string
-                  description: Objective of the test
-      responses:
-        '201':
-          description: Test created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - test
-                properties:
-                  test:
-                    $ref: '#/components/schemas/Test'
-        '400':
-          description: Failed to parse parameters
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ValidationProblemDetails'
-        '404':
-          description: Assessment not found
-
-  /v2/organizations/{organizationUid}/assessments/{assessmentUid}/stats:
-    get:
-      operationId: getAssessmentStats
-      summary: Get assessment statistics
-      description: Retrieve statistics for a specific assessment
-      tags:
-        - Assessments
-      parameters:
-        - name: organizationUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the organization
-        - name: assessmentUid
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The unique identifier of the assessment
-      responses:
-        '200':
-          description: Assessment statistics retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssessmentStats'
-        '404':
-          description: Assessment not found
-
   # V1 API - Listings/Assessments
   /v1/assessments:
     get:
@@ -1428,7 +1119,7 @@ paths:
           description: Unauthorized
 
   # Client API - Tags
-  /listings/{id}/add_tag:
+  /v1//listings/{id}/add_tag:
     post:
       operationId: addListingTag
       summary: Add tag to a listing
@@ -1462,7 +1153,7 @@ paths:
         '404':
           description: Tag or listing not found
 
-  /listings/{id}/remove_tag:
+  /v1//listings/{id}/remove_tag:
     post:
       operationId: removeListingTag
       summary: Remove tag from a listing
@@ -1496,7 +1187,7 @@ paths:
         '404':
           description: Tag or listing not found
 
-  /listings_tags/{listing_id}:
+  /v1/istings_tags/{listing_id}:
     get:
       operationId: getListingTags
       summary: Get tags for a listing
@@ -1527,7 +1218,7 @@ paths:
         '404':
           description: Listing not found
 
-  /tag:
+  /v1/tag:
     post:
       operationId: createTag
       summary: Create a tag

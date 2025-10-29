@@ -25,18 +25,22 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "Asset Management API",
+            "group": "Asset Management v2 API",
             "openapi": "asset-v2-openapi.yaml"          },
           {
-            "group": "Asset Tagging API",
+            "group": "Asset Tagging v1 API",
             "openapi": "tagging-openapi.yaml"
           },
           {
-            "group": "Assessment API",
-            "openapi": "monolith-openapi.yaml"
+            "group": "Assessment v1 API",
+            "openapi": "monolith-v1-openapi.yaml"
           },
           {
-            "group": "Query API",
+            "group": "Assessment v2 API",
+            "openapi": "monolith-v2-openapi.yaml"
+          },
+          {
+            "group": "Query API v1",
             "openapi": "streaming-openapi.yaml"
           }
         ]
