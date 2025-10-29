@@ -12,9 +12,9 @@ tags:
   - name: tagging
     description: Tagging operations
 servers:
-  - url: https://client.synack.com/api/tagging/v1.0
+  - url: https://client.synack.com/api/tagging
     description: Commercial
-  - url: https://client.synack.us/api/tagging/v1.0
+  - url: https://client.synack.us/api/tagging
     description: FedRAMP (Medium)
 
 
