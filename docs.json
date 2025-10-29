@@ -32,11 +32,11 @@
             "openapi": "tagging-openapi.yaml"
           },
           {
-            "group": "Assessment v1 API",
+            "group": "Platform v1 API",
             "openapi": "monolith-v1-openapi.yaml"
           },
           {
-            "group": "Assessment v2 API",
+            "group": "Platform v2 API",
             "openapi": "monolith-v2-openapi.yaml"
           },
           {
