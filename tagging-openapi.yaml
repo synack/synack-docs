@@ -9,7 +9,7 @@ info:
 tags:
   - name: status
     description: Various ping and health endpoints
-  - name: tagging
+  - name: Tags 
     description: Tagging operations
 servers:
   - url: https://client.synack.com/api/tagging
@@ -25,7 +25,7 @@ paths:
     post:
       operationId: postTags
       tags:
-        - tagging
+        - Tags 
       description: |
         Create new tags. 
         409 Conflict is logged as warn if the name matches the name of a tag that already exists in a given org uid.
@@ -78,7 +78,7 @@ paths:
     delete:
       operationId: deleteTags
       tags:
-        - tagging
+        - Tags
       description: >
         Deletes tags.
       x-mint:
@@ -114,7 +114,7 @@ paths:
     patch:
       operationId: patchTags
       tags:
-        - tagging
+        - Tags
       description: >
         Attach/detach entities to/from org uids and/or tag uids.
       x-mint:
@@ -168,7 +168,7 @@ paths:
     put:
       operationId: putTags
       tags:
-        - tagging
+        - Tags
       description: >
         Updates tag name by tag uid.
       x-mint:
