@@ -8,15 +8,15 @@ info:
 tags:
   - name: asset-relationships
     description: Relationships between assets.
-  - name: assets
+  - name: Assets
     description: Assets managed by Synack.
   - name: cloudaccounts
     description: Cloud account assets.
   - name: credentials
     description: Credentials are restricted to authorized users.
-  - name: hosts
+  - name: Hosts
     description: Host assets.
-  - name: listings
+  - name: Assessments
     description: Assets are associated with listings.
   - name: mobileapps
     description: Mobile application assets.
@@ -44,9 +44,9 @@ paths:
     post:
       operationId: postAssetBulk
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -95,9 +95,9 @@ paths:
     post:
       operationId: bulkUpdateAssetLifecycleState
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -144,7 +144,7 @@ paths:
     post:
       operationId: bulkUpdateAssetCriticality
       tags:
-        - assets
+        - Assets
         - cloudaccounts
         - hosts
         - mobileapps
@@ -196,7 +196,7 @@ paths:
     put:
       operationId: putListingAsset
       tags:
-        - listings
+        - Assessments
       description: Upsert assignment of an asset to a listing.
       x-mint:
         metadata:
@@ -230,7 +230,7 @@ paths:
     delete:
       operationId: deleteListingAsset
       tags:
-        - listings
+        - Assessments
       description: Delete the assignment of an asset to a listing.
       x-mint:
         metadata:
@@ -262,7 +262,7 @@ paths:
     patch:
       operationId: patchListingAssets
       tags:
-        - listings
+        - Assessments
       description: Associate or disassociate zero or more assets from a listing.
         Allows the caller to provide lists of assets to add to and/or remove from
         being associated with a listing. Unknown assets are ignored.
@@ -304,7 +304,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AssetTypeQuery"
       tags:
-        - listings
+        - Assessments
       description: Delete all the association of assets from a listing.
       x-mint:
         metadata:
@@ -336,7 +336,7 @@ paths:
       x-excluded: true
       operationId: patchListingGateways
       tags:
-        - listings
+        - Assessments
       description: |
         Associate or disassociate gateway ID from a listing.
         Allows the caller to provide gateway ID to add to and/or remove from
@@ -373,7 +373,7 @@ paths:
       x-excluded: true
       operationId: putListingAssetsResetScopeRules
       tags:
-        - listings
+        - Assessments
       description: For every asset associated with the listing, reset the scope rules to default rules
       responses:
         "204":
@@ -396,9 +396,9 @@ paths:
     get:
       operationId: getAssets
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -679,9 +679,9 @@ paths:
     post:
       operationId: postAsset
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -733,8 +733,8 @@ paths:
     get:
       operationId: getWHOIS
       tags:
-        - assets
-        - hosts
+        - Assets
+        - Hosts
       description: >
         Retrieves the WHOIS data for a single asset.
       x-mint:
@@ -754,8 +754,8 @@ paths:
       x-excluded: true
       operationId: putWHOIS
       tags:
-        - assets
-        - hosts
+        - Assets
+        - Hosts
       description: >
         Adds the WHOIS data to a single asset.
       requestBody:
@@ -781,9 +781,9 @@ paths:
     get:
       operationId: getAsset
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -823,9 +823,9 @@ paths:
     patch:
       operationId: patchAsset
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -865,9 +865,9 @@ paths:
       x-excluded: true
       operationId: deleteAsset
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
@@ -903,7 +903,7 @@ paths:
     get:
       operationId: getRelatedAssets
       tags:
-        - assets
+        - Assets
       description: >
         Returns all assets that share a relationship with the matched Asset UID.
       x-mint:
@@ -937,7 +937,7 @@ paths:
       x-excluded: true
       operationId: getBurpTargetScopeForAsset
       tags:
-        - assets
+        - Assets
         - webapps
       description: >
         Retrieve a Burp target scope file, if the asset is a webapp.
@@ -1238,7 +1238,7 @@ paths:
     get:
       operationId: getHostPort
       tags:
-        - hosts
+        - Hosts
         - ports
       description: >
         Retrieve a port for a host asset.
@@ -1265,7 +1265,7 @@ paths:
       x-excluded: true
       operationId: putHostPort
       tags:
-        - hosts
+        - Hosts
         - ports
       description: >
         Upsert a port to a host asset. Will return 409 status if the asset
@@ -1313,7 +1313,7 @@ paths:
       x-excluded: true
       operationId: patchHostPort
       tags:
-        - hosts
+        - Hosts
         - ports
       description: >
         Update properties of a port belonging a single-IP host asset.
@@ -1354,7 +1354,7 @@ paths:
       x-excluded: true
       operationId: deleteHostPort
       tags:
-        - hosts
+        - Hosts
         - ports
       description: >
         Delete a port from a host asset. Will return 409 status if the asset
@@ -1698,7 +1698,7 @@ paths:
       x-excluded: true
       operationId: getScopeRules
       tags:
-        - hosts
+        - Hosts
         - webapps
         - scoperules
       description: Gets a list of all scope rules for a host or web application asset.
@@ -1741,7 +1741,7 @@ paths:
       x-excluded: true
       operationId: postScopeRule
       tags:
-        - hosts
+        - Hosts
         - webapps
         - scoperules
       description: Adds a scope rule to a web application or host asset.
@@ -1785,7 +1785,7 @@ paths:
       x-excluded: true
       operationId: getScopeRule
       tags:
-        - hosts
+        - Hosts
         - webapps
         - scoperules
       description: Retrieve a scope rule.
@@ -1811,7 +1811,7 @@ paths:
       x-excluded: true
       operationId: patchScopeRule
       tags:
-        - hosts
+        - Hosts
         - webapps
         - scoperules
       description:
@@ -1852,7 +1852,7 @@ paths:
       x-excluded: true
       operationId: deleteScopeRule
       tags:
-        - hosts
+        - Hosts
         - webapps
         - scoperules
       description:
@@ -2479,9 +2479,9 @@ paths:
     get:
       operationId: getAssetStats
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - webapps
       description: >
@@ -2515,9 +2515,9 @@ paths:
     get:
       operationId: getDiscoveredAssetSummaries
       tags:
-        - assets
+        - Assets
         - cloudaccounts
-        - hosts
+        - Hosts
         - mobileapps
         - networks
         - webapps
