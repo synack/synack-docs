@@ -16,6 +16,7 @@ servers:
 paths:
   /v1/{org_uid}/assets/providers:
     get:
+      x-excluded: true
       summary: Returns list of asset providers
       description: Get Asset Providers by Organization
       operationId: getAssetProviders
@@ -1328,6 +1329,7 @@ paths:
 
   /v1/{org_uid}/assets/gateways:
     get:
+      x-excluded: true
       summary: Returns list of asset gateways
       description: Get Asset Gateways by Organization
       operationId: getAssetGateways
