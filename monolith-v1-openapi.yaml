@@ -1119,7 +1119,7 @@ paths:
           description: Unauthorized
 
   # Client API - Tags
-  /v1//listings/{id}/add_tag:
+  /v1/listings/{id}/add_tag:
     post:
       operationId: addListingTag
       summary: Add tag to a listing
@@ -1153,7 +1153,7 @@ paths:
         '404':
           description: Tag or listing not found
 
-  /v1//listings/{id}/remove_tag:
+  /v1/listings/{id}/remove_tag:
     post:
       operationId: removeListingTag
       summary: Remove tag from a listing
