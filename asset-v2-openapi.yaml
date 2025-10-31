@@ -2944,6 +2944,7 @@ components:
           required:
             - assetType
             - origin
+            - organizationUid
           properties:
             uid:
               $ref: "#/components/schemas/UID"
