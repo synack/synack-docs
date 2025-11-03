@@ -51,9 +51,10 @@ paths:
         - networks
         - webapps
       description: >
-        Bulk upserts array of assets and listing associations. Checks properties
-        of assets for validity and returns 409 Conflict if rules are violated.
+        Bulk upserts array of assets and listing associations. Different options for different asset types. e.g. to add more than 1 Host IP address, choose Option 2, then specify multiple IP ranges with /32 CIDRs.
+        Checks properties of assets for validity and returns 409 Conflict if rules are violated.
         Relationships can be upserted using the sourceRelationships property only.
+        Note: to create individual assets, uset the 'Create Asset' endpoint instead.
       x-mint:
         metadata:
           title: Bulk Create Assets
