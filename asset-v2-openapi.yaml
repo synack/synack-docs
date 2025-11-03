@@ -686,7 +686,7 @@ paths:
         - networks
         - webapps
       description: >
-        Creates an asset.
+        Creates an asset in my Synack org.
       x-mint:
         metadata:
           title: Create Asset
