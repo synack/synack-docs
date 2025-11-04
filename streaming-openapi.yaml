@@ -66,7 +66,7 @@ paths:
       description: Get seed groups by organization
       operationId: getAssetSeedGroups
       tags:
-        - assetseedgroups
+        - Seed Groups
       parameters:
         - name: org_uid
           in: path
@@ -111,7 +111,7 @@ paths:
       description: Get latest tests details and statuses by organization UID and asset UID
       operationId: getAssetListingsTestsLatest
       tags:
-        - org_asset_listings_tests_latest
+        - Tests
       parameters:
         - name: org_uid
           in: path
@@ -186,7 +186,7 @@ paths:
       description: Get Open Ports by Organization UID and Asset UID
       operationId: getAssetPorts
       tags:
-        - org_asset_ports
+        - Assets 
       parameters:
         - name: org_uid
           in: path
@@ -268,7 +268,7 @@ paths:
       description: Get asset suspected vulnerabilities by organization and assets uid
       operationId: getAssetSuspectedVulnerabilities
       tags:
-        - org_asset_suspected_vulns
+        - Suspected Vulnerabilities
       parameters:
         - name: org_uid
           in: path
@@ -371,7 +371,7 @@ paths:
       description: Get exploitable vulnerabilities by organization and assets uid
       operationId: getAssetVulnerabilities
       tags:
-        - org_asset_vulnerabilities
+        - Vulnerabilities
       parameters:
         - name: org_uid
           in: path
@@ -468,7 +468,7 @@ paths:
       description: Get `whois` data by asset UID
       operationId: getAssetWhois
       tags:
-        - assetwhois
+        - Assets 
       parameters:
         - name: org_uid
           in: path
@@ -514,7 +514,7 @@ paths:
       description: Get Asset Details by Organization UID and Asset UID
       operationId: getAssetDetails
       tags:
-        - asset_details
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -566,7 +566,7 @@ paths:
       description: Get Assets List by Organization
       operationId: getAssetList
       tags:
-        - assetlist
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -829,7 +829,7 @@ paths:
       description: Get Asset Ports by Organization
       operationId: getAssetPortsByOrg
       tags:
-        - assetports
+        - Assets 
       parameters:
         - name: org_uid
           in: path
@@ -874,7 +874,7 @@ paths:
       description: Get Assets Count by Organization
       operationId: getAssetsCount
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -924,7 +924,7 @@ paths:
       description: Get Returns last fingerprint scan date for assets matching the parameters provided
       operationId: getLastAssetsScan
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -974,7 +974,7 @@ paths:
       description: Get the count of last tested assets by asset criticality
       operationId: getLastTestedCounts
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1024,7 +1024,7 @@ paths:
       description: returns the 5 most recently created assets ordered by descending creation date
       operationId: getMostRecentlyAddedAssets
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1074,7 +1074,7 @@ paths:
       description: Get Top vulnerable IPs by Organization
       operationId: getTopVulnerableIPs
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1124,7 +1124,7 @@ paths:
       description: The least frequently found open ports in the organization
       operationId: getTopUniquePorts
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1174,7 +1174,7 @@ paths:
       description: Get top-5 most vulnerable ports ordered by average CVSS
       operationId: getTopVulnerablePorts
       tags:
-        - metrics
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1224,7 +1224,7 @@ paths:
       description: Get top-5 CISA known-exploitable vulnerabilities.
       operationId: getTopCISACVEs
       tags:
-        - metrics
+        - Vulnerabilities 
       parameters:
         - name: org_uid
           in: path
@@ -1279,7 +1279,7 @@ paths:
       description: Get Tags by Organization
       operationId: getTags
       tags:
-        - tags
+        - Tags
       parameters:
         - name: org_uid
           in: path
@@ -1334,7 +1334,7 @@ paths:
       description: Get Asset Gateways by Organization
       operationId: getAssetGateways
       tags:
-        - assetgateways
+        - Assets
       parameters:
         - name: org_uid
           in: path
@@ -1375,6 +1375,7 @@ paths:
 
   /v1/health:
     get:
+      x-excluded: true
       summary: Health check
       description: get health
       operationId: healthCheck
