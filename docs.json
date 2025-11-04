@@ -36,10 +36,6 @@
             "openapi": "monolith-v1-openapi.yaml"
           },
           {
-            "group": "Platform v2 API",
-            "openapi": "monolith-v2-openapi.yaml"
-          },
-          {
             "group": "Query API v1",
             "openapi": "streaming-openapi.yaml"
           }
