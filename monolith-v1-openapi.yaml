@@ -1125,7 +1125,7 @@ paths:
       summary: Add tag to a listing
       description: Add a tag to a specific listing
       tags:
-        - Listings
+        - Tags
       parameters:
         - name: id
           in: path
@@ -1159,7 +1159,7 @@ paths:
       summary: Remove tag from a listing
       description: Remove a tag from a specific listing
       tags:
-        - Listings
+        - Tags
       parameters:
         - name: id
           in: path
@@ -1193,7 +1193,7 @@ paths:
       summary: Get tags for a listing
       description: Retrieve all tags associated with a specific listing
       tags:
-        - Listings
+        - Tags
       parameters:
         - name: listing_id
           in: path
