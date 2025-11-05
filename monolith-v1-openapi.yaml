@@ -606,7 +606,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       responses:
         '200':
@@ -629,7 +629,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       requestBody:
         required: true
@@ -747,7 +747,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Suspected vulnerability ID
       responses:
         '200':
@@ -809,7 +809,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       responses:
         '200':
@@ -876,7 +876,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       responses:
         '200':
@@ -901,7 +901,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       requestBody:
         required: true
@@ -1187,7 +1187,7 @@ paths:
         '404':
           description: Tag or listing not found
 
-  /v1/istings_tags/{listing_id}:
+  /v1/listings_tags/{listing_id}:
     get:
       operationId: getListingTags
       summary: Get tags for a listing
