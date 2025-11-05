@@ -62,6 +62,9 @@ paths:
 
   /v1/{org_uid}/assets/seed_groups:
     get:
+      x-mint:
+        metadata:
+          title: Get Seed Groups for Organization
       summary: Returns list of seed groups by organization
       description: Get seed groups by organization
       operationId: getAssetSeedGroups
@@ -107,6 +110,9 @@ paths:
 
   /v1/{org_uid}/assets/{asset_uid}/listings/tests/latest:
     get:
+      x-mint:
+        metadata:
+          title: Get Tests for an Asset 
       summary: Returns list of latest tests details and statuses per organization and asset
       description: Get latest tests details and statuses by organization UID and asset UID
       operationId: getAssetListingsTestsLatest
@@ -182,6 +188,9 @@ paths:
 
   /v1/{org_uid}/assets/{asset_uid}/ports:
     get:
+      x-mint:
+        metadata:
+          title: Get Ports for a Host Asset 
       summary: Returns list of ports per organization and asset
       description: Get Open Ports by Organization UID and Asset UID
       operationId: getAssetPorts
@@ -264,6 +273,9 @@ paths:
 
   /v1/{org_uid}/assets/{asset_uid}/suspected_vulns:
     get:
+      x-mint:
+        metadata:
+          title: Get Suspected Vulnerabilities for an Asset 
       summary: Returns list of suspected vulnerabilities on a given organization and asset uid
       description: Get asset suspected vulnerabilities by organization and assets uid
       operationId: getAssetSuspectedVulnerabilities
@@ -367,6 +379,9 @@ paths:
 
   /v1/{org_uid}/assets/{asset_uid}/vulns:
     get:
+      x-mint:
+        metadata:
+          title: Get Vulnerabilities for an Asset 
       summary: Returns list of exploitable vulnerabilities on a given organization and asset uid
       description: Get exploitable vulnerabilities by organization and assets uid
       operationId: getAssetVulnerabilities
@@ -464,6 +479,9 @@ paths:
 
   /v1/{org_uid}/assets/{asset_uid}/whois:
     get:
+      x-mint:
+        metadata:
+          title: Get WHOIS for a Host Asset 
       summary: Returns `whois` data for a given asset UID
       description: Get `whois` data by asset UID
       operationId: getAssetWhois
@@ -510,6 +528,9 @@ paths:
 
   /v1/{org_uid}/assets/detail/{asset_uid}:
     get:
+      x-mint:
+        metadata:
+          title: Get Asset Details
       summary: Returns Assets Details for a given Organization and Assets UID
       description: Get Asset Details by Organization UID and Asset UID
       operationId: getAssetDetails
@@ -562,6 +583,9 @@ paths:
 
   /v1/{org_uid}/assets/list:
     get:
+      x-mint:
+        metadata:
+          title: Get Asset List
       summary: Returns list of assets with aggregated data
       description: Get Assets List by Organization
       operationId: getAssetList
@@ -825,6 +849,9 @@ paths:
 
   /v1/{org_uid}/assets/ports:
     get:
+      x-mint:
+        metadata:
+          title: Get All Ports for an Organization
       summary: Returns list of asset ports
       description: Get Asset Ports by Organization
       operationId: getAssetPortsByOrg
@@ -870,6 +897,9 @@ paths:
 
   /v1/{org_uid}/metrics/assets/count:
     get:
+      x-mint:
+        metadata:
+          title: Get Count by Asset Type
       summary: Returns count of assets by type
       description: Get Assets Count by Organization
       operationId: getAssetsCount
@@ -920,6 +950,9 @@ paths:
 
   /v1/{org_uid}/metrics/assets/any_scan:
     get:
+      x-mint:
+        metadata:
+          title: Get Last Fingerprint Date for Assets 
       summary: Returns last fingerprint scan date for assets
       description: Get Returns last fingerprint scan date for assets matching the parameters provided
       operationId: getLastAssetsScan
@@ -970,6 +1003,9 @@ paths:
 
   /v1/{org_uid}/metrics/assets/last_tested:
     get:
+      x-mint:
+        metadata:
+          title: Get Last Tested Date for Assets 
       summary: Returns the count of last tested assets by asset criticality
       description: Get the count of last tested assets by asset criticality
       operationId: getLastTestedCounts
@@ -1020,6 +1056,9 @@ paths:
 
   /v1/{org_uid}/metrics/assets/latest:
     get:
+      x-mint:
+        metadata:
+          title: Get 5 Most Recently Created Assets 
       summary: Returns the 5 most recently created assets
       description: returns the 5 most recently created assets ordered by descending creation date
       operationId: getMostRecentlyAddedAssets
@@ -1070,6 +1109,9 @@ paths:
 
   /v1/{org_uid}/metrics/ips/vulnerable:
     get:
+      x-mint:
+        metadata:
+          title: Get Most Vulnerable IP Addresses
       summary: Returns ip address sorted by most vulnerable
       description: Get Top vulnerable IPs by Organization
       operationId: getTopVulnerableIPs
@@ -1120,6 +1162,9 @@ paths:
 
   /v1/{org_uid}/metrics/ports/unique:
     get:
+      x-mint:
+        metadata:
+          title: Get 5 Least Common Ports
       summary: Returns top-5 most unique (least-common) ports
       description: The least frequently found open ports in the organization
       operationId: getTopUniquePorts
@@ -1170,6 +1215,9 @@ paths:
 
   /v1/{org_uid}/metrics/ports/vulnerable:
     get:
+      x-mint:
+        metadata:
+          title: Get 5 Most Vulnerable Ports
       summary: Returns top-5 most vulnerable ports
       description: Get top-5 most vulnerable ports ordered by average CVSS
       operationId: getTopVulnerablePorts
@@ -1220,6 +1268,9 @@ paths:
 
   /v1/{org_uid}/metrics/vulnerabilities/exploitable:
     get:
+      x-mint:
+        metadata:
+          title: Get Top 5 CISA Known Exploitable Vulnerabilities
       summary: Returns top-5 CISA known-exploitable vulnerabilities
       description: Get top-5 CISA known-exploitable vulnerabilities.
       operationId: getTopCISACVEs
@@ -1275,6 +1326,9 @@ paths:
 
   /v1/{org_uid}/tags:
     get:
+      x-mint:
+        metadata:
+          title: Get Tags for an Organization
       summary: Returns list of tags per org
       description: Get Tags by Organization
       operationId: getTags
