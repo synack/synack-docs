@@ -1154,7 +1154,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Tag ID
       responses:
         '204':
