@@ -532,6 +532,77 @@ paths:
                     type: string
                     format: date-time
 
+  "/v1/assessments/{id}/updates":
+    post:
+      summary: Create new assessment update that is visible to researchers
+      description: Post a new update for the assessment
+      x-mint:
+        metadata:
+          title: Create Update for Assessment 
+      tags:
+        - Assessments
+      parameters:
+        - name: id
+          in: path
+          description: UID of the assessment
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Message you want to pass to the researchers
+                  minLength: 10
+              required:
+                - message
+      responses:
+        '201':
+          description: Assessment update created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Message of the created update
+                  assessment_id:
+                    type: string
+                    description: ID of the listing the update was created for
+                required:
+                  - message
+                  - assessment_id
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '403':
+          description: Forbidden - user does not have permission to update this assessment
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: Assessment not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"                    
+
   # V1 API - Vulnerabilities
   /v1/vulnerabilities:
     get:
