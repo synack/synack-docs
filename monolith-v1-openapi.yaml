@@ -1108,7 +1108,7 @@ paths:
         '400':
           description: Bad request
 
-    patch:
+    put:
       operationId: updateVulnerabilityTag
       summary: Update a vulnerability tag
       description: Update an existing vulnerability tag
@@ -1119,7 +1119,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Tag ID
       requestBody:
         required: true
