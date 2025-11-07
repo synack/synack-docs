@@ -834,7 +834,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
           description: Vulnerability ID
       requestBody:
         required: true
