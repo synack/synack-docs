@@ -1059,6 +1059,8 @@ paths:
                 $ref: '#/components/schemas/AssessmentGroup'
         '404':
           description: Assessment group not found
+          
+          
 
   # V1 API - Vulnerability Tags
   /v1/vulnerability_tags:
@@ -1189,111 +1191,53 @@ paths:
         '401':
           description: Unauthorized
 
-  # Client API - Tags
-  /v1/listings/{id}/add_tag:
-    post:
-      operationId: addListingTag
-      summary: Add tag to a listing
-      description: Add a tag to a specific listing
-      tags:
-        - Tags
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: Listing ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - tag_id
-              properties:
-                tag_id:
-                  type: integer
-                  description: ID of the tag to add
-      responses:
-        '200':
-          description: Tag added successfully
-        '400':
-          description: Invalid request
-        '404':
-          description: Tag or listing not found
-
-  /v1/listings/{id}/remove_tag:
-    post:
-      operationId: removeListingTag
-      summary: Remove tag from a listing
-      description: Remove a tag from a specific listing
-      tags:
-        - Tags
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: Listing ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - tag_id
-              properties:
-                tag_id:
-                  type: integer
-                  description: ID of the tag to remove
-      responses:
-        '200':
-          description: Tag removed successfully
-        '400':
-          description: Invalid request
-        '404':
-          description: Tag or listing not found
-
-  /v1/listings_tags/{listing_id}:
+          
+  "/v1/assessment_tags":
     get:
-      operationId: getListingTags
-      summary: Get tags for a listing
-      description: Retrieve all tags associated with a specific listing
+      summary: Retrieve a list of assessments tags
+      description: Retrieve all assessments tags defined by your organization including the number of assessments they are associated with.
       tags:
         - Tags
-      parameters:
-        - name: listing_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: Listing ID
       responses:
         '200':
-          description: Tags retrieved successfully
+          description: A list of organization's assessments tags
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Tag'
-          headers:
-            X-Pagination:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      format: int64
+                    name:
+                      type: string
+                      description: custom assessment tag
+                    count:
+                      type: integer
+                      format: int64
+                      description: number of assessments the tag is associated with
+                  required:
+                    - id
+                    - name
+                    - count
+        '400':
+          description: Invalid request
+          content:
+            application/json:
               schema:
-                type: string
-              description: Pagination metadata as JSON string
+                "$ref": "#/components/schemas/errors"
         '404':
-          description: Listing not found
+          description: Not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
 
-  /v1/tag:
     post:
-      operationId: createTag
-      summary: Create a tag
-      description: Create a new tag
+      summary: Create a new assessment tag
+      description: Create a new tag and associate it with an assessment. Only organization admins are able to create new tags.
       tags:
         - Tags
       requestBody:
@@ -1302,22 +1246,142 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - name
               properties:
                 name:
                   type: string
                   description: Name of the tag
+                assessment_id:
+                  type: string
+                  description: ID of the assessment to tag
+              required:
+                - name
+                - assessment_id
       responses:
         '201':
-          description: Tag created successfully
+          description: The newly created tag
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Tag'
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+                  name:
+                    type: string
+                    description: custom assessment tag
+                required:
+                  - id
+                  - name
         '400':
-          description: Invalid request
+          description: Tag name is missing or is invalid (e.g. exists already)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: Requesting party is missing admin privileges or assessment not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Tag creation failed unexpectedly
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
 
+  "/vi/assessment_tags/{id}":
+    put:
+      summary: Update the name of an assessment tag record
+      description: Update the name of a tag. Only organization admins are able to update tags.
+      tags:
+        - Tags
+      parameters:
+        - name: id
+          in: path
+          description: ID of the assessment tag
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The new name of the tag
+              required:
+                - name
+      responses:
+        '200':
+          description: The updated assessment tag record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+                  name:
+                    type: string
+                    description: custom assessment tag
+                required:
+                  - id
+                  - name
+        '400':
+          description: Missing required request parameters
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: Requesting party is missing admin privileges or no tag corresponding to the given ID was found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Tag update failed unexpectedly (an array of error messages is returned in the response)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+
+    delete:
+      summary: Remove an assessment tag record
+      description: Remove a tag. Only organization admins are able to delete tags.
+      tags:
+        - Tags
+      parameters:
+        - name: id
+          in: path
+          description: ID of the assessment tag
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Tag was successfully removed
+        '404':
+          description: Requesting party is missing admin privileges or no tag corresponding to the given ID was found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Tag deletion failed unexpectedly
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"         
+        
+         
 security:
   - BearerAuth: []
   - BasicAuth: []
