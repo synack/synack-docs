@@ -1292,7 +1292,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/errors"
 
-  "/vi/assessment_tags/{id}":
+  "/v1/assessment_tags/{id}":
     put:
       summary: Update the name of an assessment tag record
       description: Update the name of a tag. Only organization admins are able to update tags.
