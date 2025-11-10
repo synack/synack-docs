@@ -1110,6 +1110,7 @@ paths:
         '400':
           description: Bad request
 
+  /v1/vulnerability_tags/{id}:
     put:
       operationId: updateVulnerabilityTag
       summary: Update a vulnerability tag
@@ -1144,7 +1145,6 @@ paths:
           description: Bad request
         '404':
           description: Tag not found
-
     delete:
       operationId: deleteVulnerabilityTag
       summary: Delete a vulnerability tag
