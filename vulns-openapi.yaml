@@ -1,0 +1,1026 @@
+openapi: 3.1.0
+info:
+  title: Vulnerability Service API
+  version: 1.0.0
+  description: |
+    Comprehensive API for managing suspected vulnerabilities within the Synack platform.
+    This service provides endpoints for retrieving, filtering, and triaging security vulnerabilities
+    discovered across client assets. It supports advanced filtering, pagination, export functionality,
+    and automated triage workflows to streamline vulnerability management processes.
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+
+servers:
+  - url: https://{environment}.synack.com/api/vulnerability
+    description: Production Vulnerability Service API endpoint with environment-specific routing
+    variables:
+      environment:
+        default: viper.ks-prod
+        enum:
+          - viper.ks-qa
+          - viper.ks-staging
+          - viper.ks-prod
+  - url: http://localhost:8080/api/vulnerability
+    description: Local development server endpoint
+
+x-allowed-roles: [client, boss]
+
+paths:
+  /v1/organizations/{organizationUid}/suspected-vulnerabilities:
+    get:
+      summary: Retrieve suspected vulnerabilities for an organization
+      description: |
+        Fetches a paginated list of suspected vulnerabilities associated with a specific organization.
+        Supports comprehensive filtering by status, source, listings, categories, and search queries.
+      operationId: getSuspectedVulnerabilities
+      tags:
+        - Suspected Vulnerabilities
+      parameters:
+        - name: organizationUid
+          in: path
+          description: Unique identifier for the organization whose vulnerabilities are being retrieved
+          required: true
+          schema:
+            type: string
+        - name: status[]
+          in: query
+          description: |
+            Filter vulnerabilities by their current status (e.g, qualified, in_triage, vulnerable, not_vulnerable, qualified)
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: automatedTriageStatus[]
+          in: query
+          description: |
+            Filter by automated triage status. Indicates whether the vulnerability has been processed
+            through automated triage workflows and its current automated assessment state. (e.g., eligible, ineligible, agent_review, ops_review, vulnerable, not_vulnerable, target_unreachable, out_of_scope, not_applicable)
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: source[]
+          in: query
+          description: |
+            Filter by vulnerability detection source (e.g., 'synack', 'tenable', 'qualys', 'tenablewas').
+            Identifies the tool or method that originally discovered the vulnerability.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: sourceId[]
+          in: query
+          description: |
+            Filter by vulnerability detection source ID/job ID. This represents the specific
+            batch or job identifier from external scanning tools that discovered the vulnerability.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: listingUid[]
+          in: query
+          description: |
+            Filter vulnerabilities by specific listing UIDs. Listings represent individual penetration
+            testing engagements.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: categoryId[]
+          in: query
+          description: |
+            Filter by vulnerability category ID. Categories classify vulnerabilities by type
+            (e.g., authorization_permissions/cross_origin_resource_sharing_cors, cross_site_scripting_xss/) to organize findings.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: listingCategoryId[]
+          in: query
+          description: |
+            Filter by the specific category of listings (penetration testing scopes).
+            Helps narrow results to particular types of security assessments. (e.g., web application, mobile)
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int32
+        - name: severity[]
+          in: query
+          description: |
+            Filter by the specific severity of vulnerabilities.
+            Helps narrow results to particular types of security. (e.g., low, medium, high, critical, none)
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: exportFormat
+          in: query
+          description: |
+            Specify the format for data export: 'csv' for spreadsheet analysis. When provided, returns downloadable file instead of JSON.
+          schema:
+            type: string
+        - name: exportData[]
+          in: query
+          description: |
+            Specify which fields to include in exported files. Allows customization of export
+            content to include only relevant fields for specific reporting or analysis needs.
+            Will return all fields by default.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: exportColumnNames[]
+          in: query
+          description: |
+            Specify the column headers for the exported file. Returns all custom names for headers in the file, it will be the same as SuspectedVulnerabilityResponse by default.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: query
+          in: query
+          description: |
+            Free-text search query to filter vulnerabilities. Searches across vulnerability titles,
+            descriptions, asset information, and other relevant text fields for matching content.
+          style: form
+          schema:
+            type: string
+        - name: perPage
+          in: query
+          description: |
+            Maximum number of vulnerability records to return per page. Controls pagination size
+            for better performance and manageable result sets. Typical values range from 10-100.
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: |
+            Page number for paginated results. Used in conjunction with perPage to navigate
+            through large result sets. Page numbering starts from 1.
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: lastDetectedAt
+          description: |
+            Field to sort results by: 'createdAt' for chronological discovery, 'lastDetectedAt'
+            for most recent activity, or 'cvssBase' for severity-based ordering.
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: |
+            Sort direction: 'asc' for ascending or 'desc' for descending order.
+      responses:
+        '200':
+          $ref: '#/components/responses/SuspectedVulnerabilitiesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Add suspected vulnerabilities for an organization
+      description: Add suspected vulnerabilities for an organization, creating
+        corresponding assets if needed. On success returns list of numeric IDs
+        of the newly created suspected vulnerabilities
+      operationId: postSuspectedVulnerabilities
+      tags:
+        - Suspected Vulnerabilities
+      parameters:
+        - name: organizationUid
+          in: path
+          description: Unique identifier for the organization
+          required: true
+          schema:
+            type: string
+          x-go-name: orgUID
+      requestBody:
+        description: Request body containing the list of objects, describing
+          the properties of suspected vulnerabilities to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspectedVulnerabilitiesCreateRequest'
+        required: true
+      responses:
+        '201':
+          $ref: '#/components/responses/SuspectedVulnerabilitiesCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /v1/organizations/{organizationUid}/suspected-vulnerabilities/{id}:
+    get:
+      tags:
+        - Suspected Vulnerabilities
+      summary: Retrieve a specific suspected vulnerability
+      description: |
+        Fetches detailed information for a single suspected vulnerability by its unique identifier.
+        Returns comprehensive vulnerability data including metadata, triage information, and related assets.
+      operationId: getSuspectedVulnerability
+      parameters:
+        - name: organizationUid
+          in: path
+          required: true
+          description: |
+            Unique identifier for the organization that owns the vulnerability being retrieved
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: |
+            Unique identifier for the specific suspected vulnerability to retrieve
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          $ref: '#/components/responses/SuspectedVulnerabilityResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+components:
+  responses:
+    BadRequest:
+      description: |
+        Bad Request - The request is malformed, contains invalid parameters, or missing
+        required fields. Check request syntax and parameter values.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: |
+        Unauthorized - Authentication failed. The bearer token is missing, expired,
+        invalid, or lacks sufficient permissions to access this resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: |
+        Forbidden - Access denied. The authenticated user lacks permission to access
+        the requested resource or perform the specified operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: |
+        Not Found - The requested resource does not exist. This may occur when
+        referencing invalid organization UIDs or non-existent vulnerability IDs.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntity:
+      description: |
+        Unprocessable Entity - The request is well-formed but contains semantic errors
+        or business logic violations that prevent processing (e.g., invalid status transitions).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: |
+        Internal Server Error - An unexpected server-side error occurred. This indicates
+        a system issue that should be reported to the engineering team for investigation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnexpectedError:
+      description: |
+        Unexpected Error - An unhandled error condition occurred. This represents
+        an edge case scenario that requires technical support intervention.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SuspectedVulnerabilitiesResponse:
+      description: |
+        Successfully retrieved a paginated list of suspected vulnerabilities matching the
+        specified filter criteria, including metadata for pagination and summary statistics.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              suspectedVulnerabilities:
+                type: array
+                description: List of suspected vulnerabilities matching the filter criteria
+                items:
+                  $ref: "#/components/schemas/SuspectedVulnerability"
+              metadata:
+                type: object
+                description: Response metadata including pagination and summary information
+                properties:
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+                  summaries:
+                    $ref: "#/components/schemas/SuspectedVulnerabilitiesSummaries"
+                  actions:
+                    type: object
+                    description: Available actions for the suspected vulnerabilities collection
+        text/csv:
+          schema:
+            type: string
+            description: CSV data of the suspected vulnerabilities
+            example: |
+              Asset UID,Reason Title,Reason Description,Severity,CVSS Base,Automated Triage Status,Confidence,False Positive,Source
+              ah28034gsjdf98eqwgbjufj,Test Reason Title,Test Reason Description,Low,5.4,srt_review,firm,true,synack
+              ah28034gsjdf98eqwgbjufj,Test Reason Title,Test Reason Description,Medium,6.4,srt_review,tentative,false,synack
+    SuspectedVulnerabilityResponse:
+      description: |
+        Successfully retrieved detailed information for a single suspected vulnerability,
+        including associated triage data and related metadata.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              suspectedVulnerability:
+                $ref: "#/components/schemas/SuspectedVulnerabilityWithTriages"
+              metadata:
+                $ref: "#/components/schemas/Metadata"
+    SuspectedVulnerabilitiesCreateResponse:
+      description: Response to a POST request, inserting new suspected
+        vulnerabilities for the organization
+      content:
+        application/json:
+          schema:
+            type: array
+            description: List of numeric identifiers of newly created
+              suspected vulnerabilities
+            items:
+              type: integer
+
+  schemas:
+    StringMap:
+      type: object
+      additionalProperties:
+        type: string
+    SuspectedVulnerability:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique numeric identifier for the suspected vulnerability
+          example: 2000
+        assetUid:
+          type: string
+          description: Unique identifier for the asset where the vulnerability was discovered
+          example: 'ah28034gsjdf98eqwgbjufj'
+        listingUid:
+          type: string
+          description: Unique identifier for the penetration testing listing/engagement scope
+          example: 'ah28034gsjdf'
+        listingCodename:
+          type: string
+          description: Human-readable codename for the penetration testing engagement
+          example: 'ACME-H001'
+        organizationUid:
+          type: string
+          description: Unique identifier for the organization that owns this vulnerability
+          example: 'ah28034gsjdf'
+        categoryInScope:
+          type: boolean
+          description: Indicates whether this vulnerability category is within the current testing scope
+        confidence:
+          type: string
+          description: Confidence level of the vulnerability assessment (e.g., 'firm', 'tentative', 'certain')
+          example: 'firm'
+        cvssBase:
+          type: number
+          format: double
+          description: CVSS (Common Vulnerability Scoring System) base score indicating severity (0-10 scale)
+          example: 5.4
+        exploitableLocations:
+          type: array
+          description: List of key-value maps describing exploitable locations
+          items:
+            $ref: '#/components/schemas/StringMap'
+        falsePositive:
+          type: boolean
+          description: Flag indicating whether this vulnerability has been determined to be a false positive
+        payload:
+          type: object
+          description: Additional vulnerability data and metadata from the detection source
+          $ref: '#/components/schemas/StringMap'
+        referenceUrls:
+          type: array
+          items:
+            type: string
+          description: External reference URLs providing additional context about the vulnerability
+          example:
+            - "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring_ec2.html"
+            - "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html"
+        severity:
+          type: string
+          description: Normalized severity classification (e.g., 'low', 'medium', 'high', 'critical')
+          example: low
+        source:
+          type: string
+          description: Tool or system that originally detected this vulnerability
+          example: synack
+        sourceId:
+          type: string
+          description: Unique identifier for the source job or detection run that created this vulnerability
+          example: job-abc-123
+        vulnerabilityStatusId:
+          type: integer
+          format: int64
+          description: Numeric identifier for the vulnerability's current status in the workflow
+        reasonTitle:
+          type: string
+          description: Brief title explaining the reason for the current status or assessment
+        reasonDescription:
+          type: string
+          description: Detailed explanation of the reasoning behind the current status or triage decision
+        automatedTriageStatus:
+          type: string
+          description: Current status of the vulnerability in the automated triage workflow
+        automatedTriageStatusUpdatedAt:
+          type: string
+          format: date-time
+          description: 'ISO 8601 timestamp when the automated triage status was last updated'
+          example: '2023-12-25T15:45:30.123Z'
+        cves:
+          type: array
+          description: List of Common Vulnerabilities and Exposures (CVE) identifiers associated with this vulnerability
+          items:
+            type: string
+            example: 'CVE-2025-1238923'
+        cwes:
+          type: array
+          description: List of Common Weakness Enumeration (CWE) identifiers classifying this vulnerability type
+          items:
+            type: string
+            example: 'CWE-1238923'
+        status:
+          type: string
+          description: Current workflow status of the vulnerability (e.g., 'eligible', 'vulnerable', 'not_vulnerable')
+        typeId:
+          type: string
+          description: String identifier for the vulnerability type classification
+          example: 'Type-69d55e'
+        typeTitle:
+          type: string
+          description: Title of the vulnerability type
+          example: 'SQL Injection'
+        typeCategoryId:
+          type: string
+          description: Identifier for the category that this vulnerability type belongs to
+        typeCategoryParentName:
+          type: string
+          description: Name of the parent category for hierarchical vulnerability classification
+        typeCategoryChildName:
+          type: string
+          description: Name of the child category for hierarchical vulnerability classification
+        typeDescription:
+          type: string
+          description: Description of the vulnerability type
+        exploitableVulnerabilityId:
+          type: string
+          description: Unique identifier linking this vulnerability to exploitable vulnerability records
+          example: 'test_e859b6a8371c-m001-4'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'ISO 8601 timestamp when the vulnerability was first created in the system'
+          example: '2023-12-25T15:45:30.123Z'
+        lastDetectedAt:
+          type: string
+          format: date-time
+          description: 'ISO 8601 timestamp when the vulnerability was most recently detected or confirmed'
+          example: '2023-12-25T15:45:30.123Z'
+        triageIneligibleReason:
+          type: string
+          description: Reason why the vulnerability is not eligible for automated triage
+          example: "Triage already started or performed."
+        solution:
+          type: string
+          description: Solution to the vulnerability
+          example: Microsoft has released security update KB5002113 to address this issue.
+        vendorRiskScore:
+          type: number
+          description: A risk score value provided by the vendor of the imported vulnerability.
+          example: 1.3
+    SuspectedVulnerabilityWithTriages:
+      description: |
+        Extended suspected vulnerability schema that includes embedded triage assessments.
+        Used specifically for single vulnerability responses where triage data is included.
+      allOf:
+        - $ref: "#/components/schemas/SuspectedVulnerability"
+        - type: object
+          properties:
+            triages:
+              type: array
+              description: Associated triage assessments for this vulnerability
+              items:
+                $ref: "#/components/schemas/SuspectedVulnerabilityTriage"
+    SuspectedVulnerabilitiesSummaries:
+      type: object
+      description: Statistical summary information about the vulnerabilities in the result set
+      properties:
+        counts:
+          $ref: "#/components/schemas/SuspectedVulnerabilitiesSummaries_Counts"
+    SuspectedVulnerabilityTriage:
+      type: object
+      description: Triage assessment data for a vulnerability, including analysis and reporting
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this triage assessment
+        content:
+          type: object
+          description: Detailed content of the triage analysis
+          properties:
+            thoughts:
+              type: array
+              description: List of analytical thoughts or observations from the triage process
+              items:
+                $ref: "#/components/schemas/ExternalJobTriageAgentThought"
+            report:
+              type: string
+              description: Comprehensive triage report with findings and recommendations
+    ExternalJobTriageAgentThought:
+      type: object
+      description: Thought data for a vulnerability triage, including analysis and reporting
+      properties:
+        triageId:
+          type: string
+          description: Unique identifier for this triage assessment
+        targetId:
+          type: string
+          description: Unique identifier for the target of this triage assessment
+        thoughtId:
+          type: string
+          description: Unique identifier for this thought
+        thoughtType:
+          type: string
+          description: Type of thought
+        thoughtContent:
+          type: string
+          description: Content of the thought
+        toolExecution:
+          $ref: "#/components/schemas/ExternalJobTriageAgentToolExecution"
+        block:
+          $ref: "#/components/schemas/ExternalJobTriageAgentBlock"
+        addedAt:
+          type: string
+          format: date-time
+          description: 'ISO 8601 timestamp when the thought was added'
+    ExternalJobTriageAgentToolExecution:
+      type: object
+      description: Tool execution data for a vulnerability triage, including analysis and reporting
+      properties:
+        name:
+          type: string
+          description: Name of the tool
+        input:
+          type: string
+          description: Input to the tool
+        output:
+          type: string
+          description: Output of the tool
+        error:
+          type: string
+          description: Error of the tool
+    ExternalJobTriageAgentBlock:
+      type: object
+      description: Block data for a vulnerability triage, including analysis and reporting
+      properties:
+        parentThoughtId:
+          type: string
+          description: Unique identifier for the parent thought
+        predecessorThoughtId:
+          type: string
+          description: Unique identifier for the predecessor thought
+    SuspectedVulnerabilitiesSummaries_Counts:
+      type: object
+      description: Numerical counts of vulnerabilities grouped by various attributes
+      properties:
+        severity:
+          $ref: "#/components/schemas/SuspectedVulnerabilitiesSummaries_SummarySeverity"
+        status:
+          $ref: "#/components/schemas/SuspectedVulnerabilitiesSummaries_SummaryStatus"
+    SuspectedVulnerabilitiesSummaries_SummaryStatus:
+      type: object
+      description: Summary status of the vulnerabilities
+      properties:
+        eligible:
+          type: integer
+          description: Number of eligible vulnerabilities
+          example: 10
+        ineligible:
+          type: integer
+          description: Number of ineligible vulnerabilities
+          example: 10
+        agent_review:
+          type: integer
+          description: Number of vulnerabilities awaiting agent review
+          example: 10
+        ops_review:
+          type: integer
+          description: Number of vulnerabilities awaiting operations team review
+          example: 10
+        srt_review:
+          type: integer
+          description: Number of vulnerabilities awaiting security research team review
+          example: 10
+        vulnerable:
+          type: integer
+          description: Number of confirmed vulnerable findings
+          example: 10
+        not_vulnerable:
+          type: integer
+          description: Number of findings determined to be not vulnerable
+          example: 10
+        out_of_scope:
+          type: integer
+          description: Number of findings determined to be out of scope
+          example: 10
+        target_unreachable:
+          type: integer
+          description: Number of findings determined to be target unreachable
+          example: 10
+        not_applicable:
+          type: integer
+          description: Number of findings determined to be not applicable
+          example: 10
+        total:
+          type: integer
+          description: Total number of vulnerabilities across all status categories
+          example: 100
+    SuspectedVulnerabilitiesSummaries_SummarySeverity:
+      type: object
+      description: Summary severity of the vulnerabilities
+      properties:
+        critical:
+          type: integer
+          description: Number of critical severity vulnerabilities
+        high:
+          type: integer
+          description: Number of high severity vulnerabilities
+        medium:
+          type: integer
+          description: Number of medium severity vulnerabilities
+        low:
+          type: integer
+          description: Number of low severity vulnerabilities
+        none:
+          type: integer
+          description: Number of vulnerabilities with no assigned severity
+          example: 0
+        total:
+          type: integer
+          description: Total number of vulnerabilities across all severity levels
+          example: 100
+    SuspectedVulnerabilityExploitableLocation:
+      type: object
+      properties:
+        path:
+          type: string
+          description: URL path or file system path where vulnerability exists
+        type:
+          type: string
+          description: Type of exploitable location (e.g., 'parameter', 'endpoint', 'header')
+        value:
+          type: string
+          description: Specific value or identifier for the vulnerable element
+        protocol:
+          type: string
+          description: Network protocol used for exploitation (e.g., 'HTTP', 'HTTPS', 'TCP')
+    Error:
+      type: object
+      description: Standard error response format following RFC 7807 Problem Details specification
+      required:
+        - status
+        - title
+      properties:
+        type:
+          type: string
+          description: URI reference that identifies the problem type
+        status:
+          type: integer
+          description: HTTP status code for this occurrence of the problem
+        title:
+          type: string
+          description: Human-readable summary of the problem type
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+        instance:
+          type: string
+          description: URI reference identifying the specific occurrence of the problem
+    Pagination:
+      type: object
+      description: Pagination metadata for navigating through large result sets
+      required:
+        - total
+        - page
+        - perPage
+        - totalPages
+      properties:
+        total:
+          type: integer
+          description: Total number of items across all pages
+        page:
+          type: integer
+          description: Current page number (1-based)
+        perPage:
+          type: integer
+          description: Number of items per page
+        totalPages:
+          type: integer
+          description: Total number of pages available
+        prev:
+          type: string
+          description: URL for the previous page (null if on first page)
+        next:
+          type: string
+          description: URL for the next page (null if on last page)
+        first:
+          type: string
+          description: URL for the first page
+        last:
+          type: string
+          description: URL for the last page
+        self:
+          type: string
+          description: URL for the current page
+    Metadata:
+      type: object
+      description: Additional metadata accompanying API responses
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        actions:
+          type: object
+          description: Available actions that can be performed on the returned data
+
+    SuspectedVulnerabilitiesCreateRequest:
+      description: List of objects, describing the properties of suspected
+        vulnerabilities to create
+      type: array
+      items:
+        $ref: '#/components/schemas/NewSuspectedVulnerability'
+
+    NewSuspectedVulnerability:
+      description: Object, describing properties of a new suspected
+        vulnerability to create
+      type: object
+      properties:
+        name:
+          description: The name (also known as title) of the suspected vulnerability
+          type: string
+        description:
+          description: Optional detailed description of the suspected
+            vulnerability
+          type: string
+        location:
+          description: Location of the suspected vulnerability, keeps
+            information about where the it was discovered
+          type: string
+          examples:
+            bareIpAddress:
+              summary: Reference to a single IP address
+              value: 192.168.1.1
+            ipAddressWithTcpPort:
+              summary: Reference to a single TCP port number
+              value: tcp://192.168.1.1:22
+            ipAddressWithUdpPort:
+              summary: Reference to a single UDP port number
+              value: udp://192.168.1.1:53
+            ipAddressWithIcmpProto:
+              summary: Reference to a single IP address, ICMP protocol
+              description: Since the ICMP protocol doesn't have port
+                abstraction, like TCP or UDP, the URI defines only
+                protocl name and IP address of the host
+              value: icmp://192.168.1.1
+            webUrl:
+              summary: URL pointing to a specific resource inside a webapp
+              value: https://example.com/path?query#segment
+        cvssScore:
+          description: CVSS base score of the vulnerability, valid values are
+            from 0 to 10 inclusively. See https://www.first.org/cvss/ for
+            further details.
+          type: number
+          format: float
+          x-go-name: CVSSScore
+        cvssVersion:
+          description: Version of CVSS base score, positive float number.
+            See https://www.first.org/cvss/ for further details.
+          type: number
+          format: float
+          x-go-name: CVSSVersion
+          examples:
+            v2:
+              summary: CVSS version 2
+              value: 2.0
+            v3.1:
+              summary: CVSS version 3.1
+              value: 3.1
+        cves:
+          description: Optional list of IDs of Common Vulnerabilities and
+            Exposures (also known as CVE), in "CVE-YYYY-N" format.
+            See https://www.cve.org/ for details
+          type: array
+          items:
+            type: string
+          examples:
+            cveID:
+              summary: Log4shell vulnerability, affects Log4j versions
+                2.0-beta9 to 2.14.1. It allows remote code execution and
+                information disclosure if exploited.
+              value:
+                - CVE-2021-44228
+          x-go-name: CVEs
+        cwes:
+          description: Optional list of IDs of Common Weakness Enumeration
+            (also known as CWE), in "CWE-N" format. See https://cwe.mitre.org/
+            for further details.
+          type: array
+          items:
+            type: string
+          examples:
+            cweID:
+              summary: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')
+              value:
+                - CWE-79
+          x-go-name: CWEs
+        category:
+          description: Optional category of the suspected vulnerability, as
+            human readable string. Usually it is scanner dependent.
+            For instance, in Tenable it is called `family`.
+          type: string
+        firstFoundAt:
+          description: Optional date and time when the suspected vulnerability
+            was detected for the first time on the asset, in RFC 3339 format,
+            with sub-second precision added if present.
+          type: string
+          format: date-time
+        lastFoundAt:
+          description: Date and time when the suspected vulnerability was
+            detected for the last time on the asset, in RFC 3339 format, with
+            sub-second precision added if present.
+          type: string
+          format: date-time
+        solution:
+          description: Optional description of actions that could be taken
+            in order to remediate the vulnerability.
+          type: string
+        source:
+          description: Identifier of the source of the suspected vulnerability.
+            Usually it points to a scanner name. It should contain only lowercase
+            alphanumeric chars and hyphens. It should start with a letter.
+          type: string
+          examples:
+            OpenVAS:
+              summary: OpenVAS vulnerability scanner
+              value: openvas
+            Burp Suite:
+              summary: Burp Suite vulnerability scanner
+              value: burp-suite
+            Tenable:
+              summary: Tenable Vulnerability Management Service
+              value: tenable
+            TenableWAS:
+              summary: Tenable Vulnerability Management Service
+              value: tenablewas
+            Qualys:
+              summary: Qualys Vulnerability Management Tool
+              value: qualys
+        confidence:
+          description: Optional confidence of the suspected vulnerability.
+            Usually it is scanner specific. For example, it is called `confidence`
+            in Burp Suite, `Quality of Detection` in OpenVAS. Tenable doesn't
+            have any at all.
+          type: string
+          enum:
+            - certain
+            - firm
+            - tentative
+        severity:
+          description: Optional severity of the suspected vulnerability.
+            Usually it is scanner specific. Sometimes it is calculated from
+            CVSS Base Score.
+          type: string
+          enum:
+            - critical
+            - high
+            - medium
+            - low
+            - informational
+        assetUid:
+          description: Optional unique identifier of the asset, where the
+            suspected vulnerability was discovered. When set, must contain
+            only lowercase hex digits. When not set, asset will be created
+            based on `location` property.
+          type: string
+          x-go-name: AssetUID
+        listingUid:
+          description: Optional unique identifier of the assessment (also
+            known as listing), that should be used to assign to when creating
+            new assets. Used only when `assetUid` property is set. If set,
+            must contain only lowercase alphanumeric characters.
+          type: string
+          x-go-name: ListingUID
+        owaspIds:
+          description: Optional list of OWASP identifiers. These
+            identifiers are standardized labels used to categorize
+            security vulnerabilities according to the OWASP (Open Web
+            Application Security Project) Top 10 framework - a globally
+            recognized list of the most critical security risks to web
+            applications. The identifiers follow a specific format -
+            "A##:YYYY" where "A##" is position in the OWASP Top 10
+            list (e.g., A01, A02, A03); "YYYY" is year of the OWASP
+            Top 10 publication (e.g., 2017, 2021, 2024)
+          type: array
+          items:
+            type: string
+          examples:
+            brokenAccessControl:
+              summary: Broken Access Control
+              value:
+                - A01:2021
+          x-go-name: OWASPIDs
+        vendorRiskScore:
+          description: A risk score value provided by the vendor of the
+            imported vulnerability. This can differ from vendor to vendor.
+            For example, Qualys QDS has a range from 1 to 100, Tenable VPR
+            is 0.1 – 10.0.
+          type: number
+        httpRequest:
+          description: If the HTTP request, used to discover the suspected
+            vulnerability is known, it should be placed here as is, including
+            all the request headers.
+          type: string
+          format: byte
+          x-go-name: HTTPRequest
+        httpResponse:
+          description: If the HTTP response, used to discover the suspected
+            vulnerability is known, it should be placed here as is, including
+            all the response headers.
+          type: string
+          format: byte
+          x-go-name: HTTPResponse
+      required:
+        - name
+        - location
+        - cvssScore
+        - cvssVersion
+        - lastFoundAt
+        - source

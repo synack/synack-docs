@@ -26,7 +26,12 @@
         "groups": [
           {
             "group": "Asset Management v2 API",
-            "openapi": "asset-v2-openapi.yaml"          },
+            "openapi": "asset-v2-openapi.yaml"          
+          },
+          {
+            "group": "Vulnerability Management API",
+            "openapi": "vulns-openapi.yaml"
+          },
           {
             "group": "Asset Tagging v1 API",
             "openapi": "tagging-openapi.yaml"
