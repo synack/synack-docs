@@ -201,6 +201,11 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
     post:
       summary: Add suspected vulnerabilities for an organization
       description: Add suspected vulnerabilities for an organization, creating
@@ -238,6 +243,10 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_gw
 
   /v1/organizations/{organizationUid}/suspected-vulnerabilities/{id}:
     get:
@@ -281,7 +290,31 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         default:
           $ref: '#/components/responses/UnexpectedError'
+      security:
+        - OAuth2:
+            - asset_gr
+            - asset_or
+            - asset_lr
 components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "login.synack.com"
+          scopes:
+            #TODO review these scopes; especially if the asset service is no longer listing aware
+            asset_lr: Grants per-listing read access for all types of assets.
+            asset_srt_lr: Grants per-listing read access to assets that may be read by SRTs.
+            asset_or: Grants organization-level read access for all types of assets owned by a particular organization.
+            asset_boss_ow: Grants organization-level access to assets owned by a particular organization that may be modified by BOSS users.
+            asset_boss_lw: Grants per-listing write access to assets that may be modified by BOSS users.
+            asset_client_ow: Grants organization-level access to assets owned by a particular organization that may be modified by Client users.
+            asset_client_lw: Grants per-listing write access to assets that may be modified by Client users.
+            asset_user_or: Grants user-level read access to asset stats that owned by a particular organization.
+            asset_gr: Grants unrestricted read access to all assets. Except for credential data of cloud accout assets.
+            asset_gw: Grants unrestricted write access to all assets.
+            asset_scan_gr: Grants unrestricted read access to all assets. Including credential data of cloud account assets.
   responses:
     BadRequest:
       description: |
