@@ -10,19 +10,11 @@ info:
   contact:
     name: Synack Engineering
     email: engineering@synack.com
-
 servers:
-  - url: https://{environment}.synack.com/api/vulnerability
-    description: Production Vulnerability Service API endpoint with environment-specific routing
-    variables:
-      environment:
-        default: viper.ks-prod
-        enum:
-          - viper.ks-qa
-          - viper.ks-staging
-          - viper.ks-prod
-  - url: http://localhost:8080/api/vulnerability
-    description: Local development server endpoint
+  - url: https://client.synack.com/api/vulnerability
+    description: Commercial 
+  - url: https://client.synack.us/api/vulnerability
+    description: FedRAMP (Medium)
 
 x-allowed-roles: [client, boss]
 
