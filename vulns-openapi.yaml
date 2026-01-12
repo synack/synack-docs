@@ -988,7 +988,6 @@ components:
             - high
             - medium
             - low
-            - informational
         assetUid:
           description: Optional unique identifier of the asset, where the
             suspected vulnerability was discovered. When set, must contain
