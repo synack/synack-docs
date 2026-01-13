@@ -9,7 +9,9 @@ The Synack API is a RESTful service that allows retrieving or adding data from t
 
 > Note: the permissions of the Synack User who generates the token apply. We recommend that your Synack Admin generates the token, so that data for all Synack Assessments and Vulnerabilities in the Organization are accessible to API requests. If a User with a different role generates the API token, data available to API requests will match the data which the user who generated the API Key sees in the Synack Portal.
 
-To generate the token, in the Synack Client portal go to Settings -> API -> Tokens. In the ‘IPv4 Address’ field we recommend using the * wildcard, however if a consistent source IP address for API requests is known then this can be specified. Optionally, set an ‘Expires At’ date for the Token.  
+To generate the token, in the Synack Client portal go to Settings -> API -> Tokens. In the ‘IPv4 Address’ field we recommend using the * wildcard, however if a consistent production source IP address for API requests is known then this can be specified. Optionally, set an ‘Expires At’ date for the Token.  
+
+Note: The 'Try It' feature in the API Reference portal can be helpful for experimenting with API usage, in advance of production integration. Because the source IP address when using 'Try It' is not static, the * wildcard token should be used, until experimentation is complete.
 
 For details of available Synack API endpoints and their functions, please consult the ‘API Reference’ section of this API Portal. However, as an introduction, here is one example of how to fetch all exploitable vulnerabilities for a Synack organization.
 
