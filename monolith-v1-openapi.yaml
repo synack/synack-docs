@@ -1345,35 +1345,6 @@ paths:
       requestBody:
         description: Request body.
         content:
-          application/xml:
-            schema:
-              required:
-              - email
-              type: object
-              properties:
-                email:
-                  type: string
-                  description: E-mail address for the user
-                first_name:
-                  type: string
-                  description: First name of the user
-                last_name:
-                  type: string
-                  description: Last name of the user
-                admin:
-                  type: boolean
-                  description: Flag to indicate whether to grant admin privileges
-                  default: false
-                assessments:
-                  type: array
-                  description: IDs of assessments to grant user access to
-                  items:
-                    type: string
-                send_invite:
-                  type: boolean
-                  description: Flag to indicate whether to send the user the invitation
-                    URL by e-mail
-                  default: true
           application/json:
             schema:
               required:
