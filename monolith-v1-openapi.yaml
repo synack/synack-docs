@@ -1422,7 +1422,7 @@ paths:
           description: The requesting party does not have admin privileges
           content: {}                  
 
-  /users/{id}:
+  /v1/users/{id}:
     get:
       tags:
       - Users
