@@ -37,6 +37,10 @@
             "openapi": "tagging-openapi.yaml"
           },
           {
+            "group": "Mission v2 API",
+            "openapi": "mission-v2-openapi.yaml"
+          },
+          {
             "group": "Platform v1 API",
             "openapi": "monolith-v1-openapi.yaml"
           },
