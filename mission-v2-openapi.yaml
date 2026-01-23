@@ -1,0 +1,1359 @@
+openapi: 3.0.3
+
+info:
+  title: Mission Service v2
+  description: RESTful API for managing campaigns, tasks, and mission-related operations.
+  version: 1.0.29
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+
+servers:
+  - url: https://client.synack.com/api/tasks
+    description: Commercial
+  - url: https://client.synack.us/api/tasks
+    description: FedRAMP (Medium)
+
+tags:
+  - name: Campaigns
+    description: Access campaign information.
+  - name: Tasks
+    description: Access task information.
+
+security:
+  - OAuth2: [ ]
+
+paths:
+  /v2/campaigns/:
+    get:
+      x-mint:
+        metadata:
+          title: Get campaigns
+      tags:
+        - Campaigns
+      summary: Search for campaigns.
+      description: Allows searching for campaigns available to the current authenticated user. Campaigns are filtered based on what current listings and organizations the current user has access to.
+      operationId: GetCampaigns
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Page"
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/PerPage"
+        - name: sort
+          description: Sorts by field names.
+          in: query
+          required: false
+          schema:
+            type: array
+            description: If sorting is done on "TASKSFAILED" then it will set includeTaskStats to true.
+            items:
+              default: "PUBLISHED"
+              enum:
+                [
+                    "PUBLISHED",
+                    "TASKSFAILED",
+                    "CREATED",
+                    "STATUSCREATED",
+                    "COMPLETED",
+                ]
+        - name: sortDir
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/SortDir"
+        - name: q
+          description: "Search by campaign's title, description or scope"
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdByRole
+          description: "Filter campaigns by created_role"
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: orgUids
+          description: Filter by organization UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - name: listingUids
+          description: Filter by listing UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - name: status
+          description: Filter by Campaign Status.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/CampaignStatus"
+        - name: listingType
+          description: Filter by listing types. Search is performed on the campaign's tags.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: includeTaskStats
+          description: >
+            If this set to true, then additional tasks stats fields will be set for each campaign in the response which include:
+              * tasksTotal
+              * tasksCompleted
+              * tasksPassed
+              * tasksFailed
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: includeCatalogCategory
+          description: If set to true, then the CampaignCatalog that each Campaign belongs to will be included in the response.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: includePublishedWaiting
+          description: >
+            If this is set to true, then additional tasksPublishedWaiting field will be set for each campaign in the response,
+            which contains the count of missions that have been in PUBLISHED state for more than 30 minutes.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: publishedStartDate
+          description: It is possible this value alone to the query. If both published start and end date are provided, it is required for startDate < endDate.
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: publishedEndDate
+          description: It is possible this value alone to the query. If both published start and end date are provided, it is required for startDate < endDate.
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: deleted
+          description: Filter by soft-deleted or non soft-deleted campaigns. This flag will default to true for users with Client roles. Users with client roles attempting to send a value for this param will result in a 403 Forbidden.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: deactivated
+          description: Filter by activated/deactivated campaigns.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: creditsDeducted
+          description: Whether to return deducted credits.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Successful operation.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+            Pagination-Limit:
+              $ref: "#/components/schemas/HeaderPaginationLimit"
+            Pagination-Current-Page:
+              $ref: "#/components/schemas/HeaderPaginationCurrentPage"
+            Pagination-Total-Pages:
+              $ref: "#/components/schemas/HeaderPaginationTotalPages"
+            Pagination-Total-Count:
+              $ref: "#/components/schemas/HeaderPaginationTotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GetCampaignsResult"
+        400:
+          description: Returned when query params are in bad format or when some of the Tasks requested for retesting were not found.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                description: Response returned with more information about the error that occurred.
+                properties:
+                  errorCode:
+                    $ref: "#/components/schemas/ExtErrorCode400"
+                  errorMsg:
+                    $ref: "#/components/schemas/ResponseErrMsg"
+        403:
+          description: Returned whenever a user does not have the required features enabled, has no orgs/listings assigned.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+  /v2/campaigns/{campaignID}:
+    get:
+      x-mint:
+        metadata:
+          title: Get a specific campaign
+      tags:
+        - Campaigns
+      summary: Search for campaign by ID.
+      description: Allows searching for campaign by ID if available to the current authenticated user.
+      operationId: GetCampaignByID
+      parameters:
+        - name: campaignID
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeTaskStats
+          description: >
+            If this set to true, then additional tasks stats fields will be set for the campaign in the response which include:
+              * tasksTotal
+              * tasksCompleted
+              * tasksPassed
+              * tasksFailed
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: includeCatalogCategory
+          description: If set to true, then the CampaignCatalog that this Campaign belongs to will be included in the response.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: creditsDeducted
+          description: Whether to return deducted credits.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Successful operation.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCampaignResult"
+        403:
+          description: Returned whenever a user does not have the required features enabled, has no orgs/listings assigned.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+        404:
+          description: Campaign not found
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+  /v2/campaigns/stats:
+    get:
+      x-mint:
+        metadata:
+          title: Get campaigns stats
+      tags:
+        - Campaigns
+      summary: Get campaigns stats by status.
+      description: Allows searching for campaigns stats by status if available to the current authenticated user.
+      operationId: GetCampaignsStats
+      parameters:
+        - name: orgUids
+          description: Filter by organization UIDs.
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - name: listingUids
+          description: Filter by listing UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        200:
+          description: Successful operation.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCampaignsStatsResult"
+        403:
+          description: Returned whenever a user does not have client role.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+  /v2/tasks:
+    get:
+      x-mint:
+        metadata:
+          title: Get tasks
+      tags:
+        - Tasks
+      summary: Search for tasks.
+      description: Allows searching for tasks available to the current authenticated user. Tasks are filtered based on what current listings and organizations the current user has access to.
+      operationId: GetTasks
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Page"
+        - name: perPage
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/PerPage"
+        - name: sort
+          description: >
+            Sorts by field names. The "CLAIMED" sort option is only available for SRTs that have the "MISSION_CLAIM_WORKFLOW" flag.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              default: "PUBLISHED"
+              enum:
+                [
+                    "PUBLISHED",
+                    "TITLE",
+                    "STATUS",
+                    "CAMPAIGNTITLE",
+                    "AMOUNT",
+                    "SUBMITTED",
+                    "RESULT",
+                    "ASSET",
+                    "CLAIMED",
+                    "SYN_CATEGORIES",
+                    "CATEGORIES"
+                ]
+        - name: sortDir
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/SortDir"
+        - name: approvedStartDate
+          description: Filter by approved date (this value can be sent alone to the query). If both approved start and end date are provided, it is required for startDate < endDate.
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: approvedEndDate
+          description: Filter by approved date (this value can be sent alone to the query). If both approved start and end date are provided, it is required for startDate < endDate.
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: assetTypes
+          description: Filter by asset types.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: attackTypes
+          description: Filter by attack types.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: categories
+          description: Filter by categories.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: cwe
+          description: Filter by CWEs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: Uids
+          description: Filter by tasks UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: orgUids
+          description: Filter by organization UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - name: listingUids
+          description: Filter by listing UIDs.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+        - name: status
+          description: Filter by task status.
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/TaskStatus"
+        - name: sv
+          description: Filter by tasks SV.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: assignee
+          description: Filter by user assignee to the tasks.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: campaignUid
+          description: Filter by campaign UID.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: deactivated
+          description: Filter by activated/deactivated tasks and campaigns.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: deactivatedTasks
+          description: Filter by activated/deactivated tasks only - no impact from campaigns.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: deleted
+          description: >
+            Filter by deleted tasks.
+            for users (Boss) this query param return deletedOn field timestamp on response if exist
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: attachments
+          in: query
+          description: Include attachments for the tasks in the response. By default is false.
+          schema:
+            type: boolean
+        - name: viewed
+          description: Include the viewed field in the response. By default is false.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: q
+          description: Query used to perform a full text search on task's title, description or scope.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: taskTemplateUid
+          description: Filter by task template UID.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: definitionId
+          description: Filter by definition ID.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: batchId
+          description: Filter by batch ID.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: taskGroup
+          description: Filter by task group.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: structuredResponse
+          description: Filter by task structured response.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: taskTypes
+          description: 'Filter task types, case insensitively. Currently accepted values are: "MISSION", "SV2M" and "TAAS".'
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: includeAssignedBySynackUser
+          description: Return whether the task was assigned to the researcher by a boss user.
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeTaskTemplateCredits
+          description: Return the task template credits for the task.
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Successful operation.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+            Pagination-Limit:
+              $ref: "#/components/schemas/HeaderPaginationLimit"
+            Pagination-Current-Page:
+              $ref: "#/components/schemas/HeaderPaginationCurrentPage"
+            Pagination-Total-Pages:
+              $ref: "#/components/schemas/HeaderPaginationTotalPages"
+            Pagination-Total-Count:
+              $ref: "#/components/schemas/HeaderPaginationTotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GetTasksResult"
+        400:
+          description: Returned when query params are in bad format.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                description: Response returned with more information about the error that occurred.
+                properties:
+                  errorCode:
+                    $ref: "#/components/schemas/ExtErrorCode400"
+                  errorMsg:
+                    $ref: "#/components/schemas/ResponseErrMsg"
+        403:
+          description: Returned whenever a user does not have the required features enabled, or has requested for orgs/listings that he doesn't have access to.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
+  /v2/reporting/campaign/{campaignUID}/:
+    get:
+      x-mint:
+        metadata:
+          title: Get a campaign report
+      tags:
+        - Reporting
+      summary: Get a campaign report with task information.
+      operationId: CampaignReport
+      parameters:
+        - name: campaignUID
+          description: The campaign UID to generate the report for.
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: category
+          description: syn_categories to search tasks
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          description: statuses to search tasks
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: structuredResponse
+          description: structured response to search tasks
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          description: free text to search missions by title
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful operation.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCampaignReportResult"
+        206:
+          description: Successful operation but with less content. In this case, attachment urls are missing.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCampaignReportResult"
+        404:
+          description: Campaign not found.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+
+components:
+  schemas:
+    Page:
+      type: integer
+      description: Page to start showing results from.
+      minimum: 1
+      default: 1
+    PerPage:
+      type: integer
+      description: Number of items to show per page.
+      minimum: 1
+      default: 1
+    SortDir:
+      type: string
+      description: Sort direction.
+      default: "desc"
+      enum: [ "asc", "desc" ]
+    CampaignStatus:
+      type: string
+      description: Campaign status enum.
+      enum: [ "CREATED", "COMPLETED", "PUBLISHED" ]
+    TaskStatus:
+      type: string
+      description: Task status enum.
+      enum:
+        [
+            "APPROVED",
+            "CLAIMED",
+            "CREATED",
+            "COMPLETED",
+            "FOR_REVIEW",
+            "PUBLISHED",
+        ]
+    RequestID:
+      type: string
+      format: uuid
+      description: A unique UUID generated for every request. In the case of an error, this error should be included in the error report by the user so that we can easily filter the logs and find the error quicker.
+    HeaderPaginationLimit:
+      type: string
+      description: The number of per page entries.
+    HeaderPaginationCurrentPage:
+      type: string
+      description: The current page requested on the query params.
+    HeaderPaginationTotalPages:
+      type: string
+      description: The total number of pages available for the specified query.
+    HeaderPaginationTotalCount:
+      type: string
+      description: The total number of entries available for the specified query.
+    ExtErrorCode400:
+      type: integer
+      format: int64
+      enum: [ 1, 2, 3, 4, 5, 7, 8, 9, 10, 11 ]
+      description: >
+        400 Bad Request extended error codes:
+          * 1 - Invalid Parameters found in the request.
+          * 2 - Campaign is not retestable.
+          * 3 - Some Task IDs were not found. When this code is set, the payload will contain a string array with all of the Task IDs that were not found.
+          * 4 - Task ID was not specified when trying to spend credits.
+          * 5 - Task is deactivated.
+          * 7 - Campaign template was not found.
+          * 8 - Task already has v1 evidence information.
+          * 9 - Some requested Task Templates for instantiation were not found.
+          * 10 - No active sprint was found for listing.
+          * 11 - Invalid task response value.
+          * 12 - Some requested Campaign for missionize was not found.
+          * 13 - Some SVs already have tasks associated.
+          * 14 - Some requested Task Templates for missionize were not found.
+          * 15 - Type not supported during missionize.
+          * 16 - The requested task types echoed in the payload are not allowed for the current user.
+          * 17 - The requested does not have enough balance to created.
+    ResponseErrMsg:
+      type: string
+      description: When included, this error message provides the developer a more descriptive error message in the default lang (english). This error message should not be used to show to the client.
+    GetCampaignsResult:
+      type: object
+      description: Response model used by the GET /campaigns/ endpoint. All nullable fields will be omitted from the response body if their value is null.
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        listingUid:
+          type: string
+          format: uuid
+        listingCodename:
+          type: string
+        listingName:
+          type: string
+        organizationUid:
+          type: string
+          format: uuid
+        organizationName:
+          type: string
+        organizationCodename:
+          type: string
+        status:
+          $ref: "#/components/schemas/CampaignStatus"
+        published:
+          type: string
+          format: date
+          nullable: true
+        completed:
+          type: string
+          format: date
+          nullable: true
+        tasksCompleted:
+          type: integer
+        tasksTotal:
+          type: integer
+        tasksPassed:
+          type: integer
+        tasksFailed:
+          type: integer
+        tasksPublishedWaiting:
+          type: integer
+          description: Count of missions that have been in PUBLISHED state for more than 30 minutes.
+        isRetestable:
+          type: boolean
+          description: >
+            This flag will be set to true if these conditions are met:
+              * The campaign is completed.
+              * The campaign is not a retest (parentUid is NULL).
+              * The campaign's listing has the boss active flag set to true.
+              * The campaign's listing has active tests.
+              * The campaign's listing is not paused by the client.
+        parentUid:
+          type: string
+          format: uuid
+          nullable: true
+        deactivated:
+          type: string
+          format: date
+          nullable: true
+        createdOn:
+          type: string
+          format: date
+          nullable: true
+        createdByRole:
+          type: string
+          nullable: true
+        creditsDeducted:
+          type: integer
+          nullable: true
+        catalogCategory:
+          $ref: "#/components/schemas/CatalogCategoryResult"
+    GetCampaignResult:
+      type: object
+      description: Response model used by the GET /campaigns/:campaignID endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        assetType:
+          type: array
+          items:
+            type: string
+        isRetestable:
+          type: boolean
+          description: >
+            This flag will be set to true if these conditions are met:
+              * The campaign is completed.
+              * The campaign is not a retest (parentUid is NULL).
+              * The campaign's listing has the boss active flag set to true.
+              * The campaign's listing has active tests.
+              * The campaign's listing is not paused by the client.
+        parentUid:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: "#/components/schemas/CampaignStatus"
+        createdOn:
+          type: string
+          format: date
+          nullable: false
+        modifiedOn:
+          type: string
+          format: date
+          nullable: true
+        publishedOn:
+          type: string
+          format: date
+          nullable: true
+        completedOn:
+          type: string
+          format: date
+          nullable: true
+        scheduledOn:
+          type: string
+          format: date
+          nullable: true
+        listing:
+          type: object
+        scope:
+          type: string
+        tasksCompleted:
+          type: integer
+        tasksTotal:
+          type: integer
+        tasksPassed:
+          type: integer
+        tasksFailed:
+          type: integer
+        campaignTemplateUid:
+          type: string
+          format: uuid
+        campaignTemplateVersion:
+          type: integer
+        deactivated:
+          type: string
+          format: date
+          nullable: true
+        organizationUid:
+          type: string
+          format: uuid
+        creditsDeducted:
+          type: integer
+          nullable: true
+        catalogCategory:
+          $ref: "#/components/schemas/CatalogCategoryResult"
+    CatalogCategoryResult:
+      type: object
+      description: The CatalogCategory which this Campaign belongs to (via CampaignTemplate).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    GetCampaignsStatsResult:
+      type: object
+      description: Response model used by the GET /campaigns/stats endpoint.
+      properties:
+        all:
+          type: integer
+          nullable: false
+        active:
+          type: integer
+          nullable: false
+        inReview:
+          type: integer
+          nullable: false
+        completed:
+          type: integer
+          nullable: false
+    GetTasksResult:
+      type: object
+      description: Response model used by the GET /tasks endpoint. All nullable fields will be omitted from the response body if their value is null.
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        taskTemplateUid:
+          type: string
+          format: uuid
+        taskTemplateCredits:
+          type: integer
+        campaignUid:
+          type: string
+          format: uuid
+        campaignName:
+          type: string
+        listingUid:
+          type: string
+          format: uuid
+        listingCodename:
+          type: string
+        organizationUid:
+          type: string
+          format: uuid
+        organizationCodename:
+          type: string
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/GetTasksAttachmentsResult"
+        hasBeenViewed:
+          type: boolean
+        payout:
+          $ref: "#/components/schemas/PayoutResult"
+        credits:
+          type: integer
+        assetTypes:
+          type: array
+          items:
+            type: string
+        attackTypes:
+          type: array
+          items:
+            type: string
+        sv:
+          type: array
+          items:
+            type: string
+        cwe:
+          type: array
+          items:
+            type: string
+        categories:
+          type: array
+          items:
+            type: string
+        unauthorizedAssignees:
+          type: array
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+          items:
+            type: string
+        taskType:
+          type: string
+        attempts:
+          type: integer
+        batchId:
+          type: string
+        controlFamily:
+          type: string
+        definitionId:
+          type: string
+        definitionName:
+          type: string
+        fismaLow:
+          type: string
+        fismaModerate:
+          type: string
+        fismaHigh:
+          type: string
+        taskGroup:
+          type: string
+        scope:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+              * Users with Researcher role.
+        response:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+              * Users with Researcher role.
+              * Users with Client role (only if the task is in APPROVED status).
+        structuredResponse:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+              * Users with Researcher role.
+              * Users with Client role (only if the task is in APPROVED status).
+        responseType:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+              * Users with Researcher role.
+        assignee:
+          type: string
+        reviewer:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+        position:
+          type: integer
+        createdOn:
+          type: string
+          format: date
+        createdBy:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+        modifiedOn:
+          type: string
+          format: date
+        modifiedBy:
+          type: string
+          description: >
+            It will only be seen by:
+              * Users with Boss role.
+        maxCompletionTimeInSecs:
+          type: integer
+        pausedDurationInSecs:
+          type: integer
+        version:
+          type: integer
+        validResponses:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+        publishedOn:
+          type: string
+          format: date
+        claimedOn:
+          type: string
+          format: date
+        completedOn:
+          type: string
+          format: date
+        validatedOn:
+          type: string
+          format: date
+        reviewedOn:
+          type: string
+          format: date
+        pausedOn:
+          type: string
+          format: date
+        deactivatedOn:
+          type: string
+          format: date
+        invalidatedOn:
+          type: string
+          format: date
+        returnedForEditOn:
+          type: string
+          format: date
+        canEditResponse:
+          type: boolean
+        isAssigneeCurrentUser:
+          type: boolean
+        assignedBySynackUser:
+          type: boolean
+          description: "Whether this task was assigned to a researcher by a boss user or not. Only available to researcher users when specifying 'includeAssignedBySynackUser=true' in the query string."
+        deletedOn:
+          type: string
+          format: date
+          description: >
+            Response model It will only be seen by:
+              * Users with Boss role.
+              * Users with Admin role.
+    GetTasksAttachmentsForReportResult:
+      type: object
+      description: Attachments related to that task
+      properties:
+        uid:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        originalFilename:
+          type: string
+        sizeInBytes:
+          type: number
+        groupUID:
+          type: string
+          format: uuid
+        createdOn:
+          type: string
+          format: date
+        modifiedOn:
+          type: string
+          format: date
+        createdBy:
+          type: string
+        modifiedBy:
+          type: string
+        version:
+          type: integer
+          format: uint
+        data:
+          type: string
+          description: URL to download attachment from GCS. Can be incomplete if there is an error obtaining URL. API will return 206 partial content.
+        thumbnailData:
+          type: string
+          description: URL to download attachment thumbnail from GCS. Can be incomplete if there is an error obtaining URL. API will return 206 partial content.
+        position:
+          type: integer
+          format: int
+        mimeType:
+          type: string
+    GetTasksAttachmentsResult:
+      type: object
+      description: >
+        Response model used in the GET /tasks endpoint. It will only be seen by:
+          * Users with Boss role.
+          * Users with Researcher role.
+          * Users with Client role (only if the task is in APPROVED status).
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        originalFilename:
+          type: string
+        data:
+          type: string
+        thumbnailData:
+          type: string
+        sizeInBytes:
+          type: integer
+        groupId:
+          type: string
+        position:
+          type: integer
+        createdOn:
+          type: string
+          format: date
+        createdBy:
+          type: string
+        modifiedOn:
+          type: string
+          format: date
+        modifiedBy:
+          type: string
+        deletedOn:
+          type: string
+          format: date
+        version:
+          type: integer
+        mimeType:
+          type: string
+    PayoutResult:
+      type: object
+      description: >
+        Response model used in the GET /tasks endpoint. It will only be seen by:
+          * Users with Boss role.
+          * Users with Researcher role.
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+    GetCampaignReportResult:
+      type: object
+      description: Response model used by the GET /reporting/campaign/{campaignUID} endpoint.
+      properties:
+        campaignDetails:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Campaign id
+            title:
+              type: string
+              description: Campaign title
+            description:
+              type: string
+              description: Campaign description
+            listingUid:
+              type: string
+              description: Campaign LISTINGID associated
+            assetTypes:
+              type: array
+              description: Campaign asset types array
+              items:
+                type: string
+            scope:
+              type: string
+              description: Campaign scope
+            createdOn:
+              type: string
+              format: date-time
+              description: Campaign created on date
+            completedOn:
+              type: string
+              format: date-time
+              description: Campaign completed on date
+            publishedOn:
+              type: string
+              format: date-time
+              description: Campaign published on date
+            tasksTotal:
+              type: integer
+              description: Total tasks count for that filter
+            tasksCompleted:
+              type: integer
+              description: Total tasks completed for that filter
+            tasksPassed:
+              type: integer
+              description: Total tasks passed for that filter
+            tasksFailed:
+              type: integer
+              description: Total tasks failed for that filter
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Task id
+              title:
+                type: string
+                description: Task title
+              description:
+                type: string
+                description: Task description
+              definitionUID:
+                type: string
+                description: Task definition ID
+              definitionName:
+                type: string
+                description: Task definition Name
+              structuredResponse:
+                type: string
+                description: "yes, no, n/a, etc... The short response for the question this task poses (e.g.: is foo vulnerable to bar)"
+              assetTypes:
+                type: array
+                description: Task CATEGORIES splitted
+                items:
+                  type: string
+              attackTypes:
+                type: array
+                description: Task TAGS splitted
+                items:
+                  type: string
+              attachments:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GetTasksAttachmentsForReportResult"
+              completedOn:
+                type: string
+                format: date-time
+              scope:
+                type: string
+              status:
+                type: string
+              type:
+                type: string
+              categories:
+                type: array
+                description: SYN_CATEGORIES
+                items:
+                  type: string
+              response:
+                type: string
+                description: Task evidence on string format. For v1 just is sent the value. For v2 to Introduction, methodology and conclusion
+              controlFamily:
+                type: string
+                description: Info retrieved from task.DEFINITIONDATA by string "control family"
+              fismaLow:
+                type: string
+                description: Info retrieved from task.DEFINITIONDATA by string "applicable to FISMA Low"
+              fismaModerate:
+                type: string
+                description: Info retrieved from task.DEFINITIONDATA by string "applicable to FISMA Moderate"
+              fismaHigh:
+                type: string
+                description: Info retrieved from task.DEFINITIONDATA by string "applicable to FISMA High"
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "login.synack.com"
+          scopes:
+            task:read: Read access.
+            task:write: Write access.
