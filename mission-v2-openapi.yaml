@@ -1326,11 +1326,7 @@ components:
                 type: string
                 description: Info retrieved from task.DEFINITIONDATA by string "applicable to FISMA High"
   securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        implicit:
-          authorizationUrl: "login.synack.com"
-          scopes:
-            task:read: Read access.
-            task:write: Write access.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
