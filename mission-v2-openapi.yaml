@@ -663,6 +663,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GetCampaignReportResult"
+        403:
+          description: Returned whenever a user does not have an authorized client role to access the report.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/schemas/RequestID"
+          content:
+            application/problem+json:
+              schema:
+                type: object
         404:
           description: Campaign not found.
           headers:
