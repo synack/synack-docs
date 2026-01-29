@@ -15,24 +15,22 @@ servers:
     description: FedRAMP (Medium)
 
 tags:
-  - name: Campaigns
-    description: Access campaign information.
-  - name: Tasks
-    description: Access task information.
+  - name: Missions
+    description: Access mission information.
 
 security:
-  - OAuth2: [ ]
+  - bearerAuth: []
 
 paths:
   /v2/campaigns/:
     get:
       x-mint:
         metadata:
-          title: Get campaigns
+          title: Get Group of Missions
       tags:
-        - Campaigns
-      summary: Search for campaigns.
-      description: Allows searching for campaigns available to the current authenticated user. Campaigns are filtered based on what current listings and organizations the current user has access to.
+        - Missions
+      summary: Search for Group of Missions.
+      description: Allows searching for Group of Missions (campaigns) available to the current authenticated user. Group of Missions are filtered based on what current listings and organizations the current user has access to.
       operationId: GetCampaigns
       parameters:
         - name: page
@@ -157,12 +155,6 @@ paths:
           schema:
             type: string
             format: date
-        - name: deleted
-          description: Filter by soft-deleted or non soft-deleted campaigns. This flag will default to true for users with Client roles. Users with client roles attempting to send a value for this param will result in a 403 Forbidden.
-          in: query
-          required: false
-          schema:
-            type: boolean
         - name: deactivated
           description: Filter by activated/deactivated campaigns.
           in: query
@@ -224,11 +216,11 @@ paths:
     get:
       x-mint:
         metadata:
-          title: Get a specific campaign
+          title: Get a specific Group of Missions
       tags:
-        - Campaigns
-      summary: Search for campaign by ID.
-      description: Allows searching for campaign by ID if available to the current authenticated user.
+        - Missions
+      summary: Search for Group of Missions by ID.
+      description: Allows searching for Group of Missions (campaign) by ID if available to the current authenticated user.
       operationId: GetCampaignByID
       parameters:
         - name: campaignID
@@ -291,11 +283,11 @@ paths:
     get:
       x-mint:
         metadata:
-          title: Get campaigns stats
+          title: Get Group of Missions stats
       tags:
-        - Campaigns
-      summary: Get campaigns stats by status.
-      description: Allows searching for campaigns stats by status if available to the current authenticated user.
+        - Missions
+      summary: Get Group of Missions stats by status.
+      description: Allows searching for Group of Missions (campaigns) stats by status if available to the current authenticated user.
       operationId: GetCampaignsStats
       parameters:
         - name: orgUids
@@ -327,7 +319,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetCampaignsStatsResult"
         403:
-          description: Returned whenever a user does not have client role.
+          description: Returned whenever a user does not have an authorized client role.
           headers:
             X-Request-ID:
               $ref: "#/components/schemas/RequestID"
@@ -339,11 +331,11 @@ paths:
     get:
       x-mint:
         metadata:
-          title: Get tasks
+          title: Get missions
       tags:
-        - Tasks
-      summary: Search for tasks.
-      description: Allows searching for tasks available to the current authenticated user. Tasks are filtered based on what current listings and organizations the current user has access to.
+        - Missions
+      summary: Search for missions.
+      description: Allows searching for missions (tasks) available to the current authenticated user. Missions are filtered based on what current listings and organizations the current user has access to.
       operationId: GetTasks
       parameters:
         - name: page
@@ -358,7 +350,7 @@ paths:
             $ref: "#/components/schemas/PerPage"
         - name: sort
           description: >
-            Sorts by field names. The "CLAIMED" sort option is only available for SRTs that have the "MISSION_CLAIM_WORKFLOW" flag.
+            Sorts by field names.
           in: query
           required: false
           schema:
@@ -496,14 +488,6 @@ paths:
           required: false
           schema:
             type: boolean
-        - name: deleted
-          description: >
-            Filter by deleted tasks.
-            for users (Boss) this query param return deletedOn field timestamp on response if exist
-          in: query
-          required: false
-          schema:
-            type: boolean
         - name: attachments
           in: query
           description: Include attachments for the tasks in the response. By default is false.
@@ -619,10 +603,10 @@ paths:
     get:
       x-mint:
         metadata:
-          title: Get a campaign report
+          title: Get a pdf report of missions result
       tags:
         - Reporting
-      summary: Get a campaign report with task information.
+      summary: Get a pdf report with mission information.
       operationId: CampaignReport
       parameters:
         - name: campaignUID
@@ -997,13 +981,6 @@ components:
             type: string
         categories:
           type: array
-          items:
-            type: string
-        unauthorizedAssignees:
-          type: array
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
           items:
             type: string
         taskType:
