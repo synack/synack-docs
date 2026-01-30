@@ -1012,57 +1012,24 @@ components:
           type: string
         taskGroup:
           type: string
-        scope:
-          type: string
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
-              * Users with Researcher role.
         response:
           type: string
           description: >
             It will only be seen by:
-              * Users with Boss role.
-              * Users with Researcher role.
               * Users with Client role (only if the task is in APPROVED status).
         structuredResponse:
           type: string
           description: >
             It will only be seen by:
-              * Users with Boss role.
-              * Users with Researcher role.
               * Users with Client role (only if the task is in APPROVED status).
-        responseType:
-          type: string
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
-              * Users with Researcher role.
-        assignee:
-          type: string
-        reviewer:
-          type: string
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
         position:
           type: integer
         createdOn:
           type: string
           format: date
-        createdBy:
-          type: string
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
         modifiedOn:
           type: string
           format: date
-        modifiedBy:
-          type: string
-          description: >
-            It will only be seen by:
-              * Users with Boss role.
         maxCompletionTimeInSecs:
           type: integer
         pausedDurationInSecs:
@@ -1112,13 +1079,6 @@ components:
         assignedBySynackUser:
           type: boolean
           description: "Whether this task was assigned to a researcher by a boss user or not. Only available to researcher users when specifying 'includeAssignedBySynackUser=true' in the query string."
-        deletedOn:
-          type: string
-          format: date
-          description: >
-            Response model It will only be seen by:
-              * Users with Boss role.
-              * Users with Admin role.
     GetTasksAttachmentsForReportResult:
       type: object
       description: Attachments related to that task
@@ -1165,8 +1125,6 @@ components:
       type: object
       description: >
         Response model used in the GET /tasks endpoint. It will only be seen by:
-          * Users with Boss role.
-          * Users with Researcher role.
           * Users with Client role (only if the task is in APPROVED status).
       properties:
         id:
@@ -1204,17 +1162,6 @@ components:
         version:
           type: integer
         mimeType:
-          type: string
-    PayoutResult:
-      type: object
-      description: >
-        Response model used in the GET /tasks endpoint. It will only be seen by:
-          * Users with Boss role.
-          * Users with Researcher role.
-      properties:
-        amount:
-          type: number
-        currency:
           type: string
     GetCampaignReportResult:
       type: object
