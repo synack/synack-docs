@@ -2995,6 +2995,14 @@ components:
                 deactivated less than 2 years ago. This field is read only and relates only to assets
                 created prior to Apr 1 2023.
               default: false
+            hasCredentials:
+              type: boolean
+              readOnly: true
+              description:
+                Indicates whether any credentials are associated with this asset.
+                Only webapp and mobileapp assets can have credentials; all other asset
+                types will always be false.
+              default: false
             scanStateUpdatedAt:
               type: string
               format: date-time
