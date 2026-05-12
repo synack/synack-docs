@@ -712,6 +712,12 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/errors"
+        '422':
+          description: Failed to approve the test
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
 
   /v1/assessments/{assessment_id}/tests/{id}/reject:
     post:
@@ -766,6 +772,12 @@ paths:
                 "$ref": "#/components/schemas/errors"
         '409':
           description: Test is not in Admin Review status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Failed to reject the test
           content:
             application/json:
               schema:
