@@ -706,7 +706,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/errors"
-        '422':
+        '409':
           description: Test is not in Admin Review status or the approval failed
           content:
             application/json:
@@ -764,7 +764,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/errors"
-        '422':
+        '409':
           description: Test is not in Admin Review status or the rejection failed
           content:
             application/json:
