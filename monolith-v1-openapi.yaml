@@ -627,8 +627,161 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/errors"                    
+                "$ref": "#/components/schemas/errors"
+  # V1 API - Tests
+  /v1/assessments/{assessment_id}/tests:
+    get:
+      operationId: getAssessmentTests
+      summary: Retrieve all tests on an assessment
+      description: Retrieve tests associated with a specific assessment
+      tags:
+        - Tests
+      parameters:
+        - name: assessment_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the assessment
+      responses:
+        '200':
+          description: A list of tests on the assessment
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Test'
+        '403':
+          description: The user is missing sufficient privileges
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: No assessment matched the given ID
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
 
+  /v1/assessments/{assessment_id}/tests/{id}/approve:
+    post:
+      operationId: approveTest
+      summary: Approve a test (as a super admin)
+      description: |
+        Approve a test as a super admin, transitioning it from Admin Review to Synack Review status.
+        The test must be in Admin Review status.
+      tags:
+        - Tests
+      parameters:
+        - name: assessment_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the assessment
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the test
+      responses:
+        '200':
+          description: The approved test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+        '403':
+          description: The user is missing sufficient privileges or the feature is not enabled
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: No assessment or test matched the given ID
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '409':
+          description: Test is not in Admin Review status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Failed to approve the test
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+
+  /v1/assessments/{assessment_id}/tests/{id}/reject:
+    post:
+      operationId: rejectTest
+      summary: Reject a test (as a super admin)
+      description: |
+        Reject a test as a super admin, returning it to draft status.
+        The test must be in Admin Review status.
+      tags:
+        - Tests
+      parameters:
+        - name: assessment_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the assessment
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the test
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                super_admin_reject_reason:
+                  type: string
+                  description: Reason for rejection (optional, sent back to the test submitter)
+      responses:
+        '200':
+          description: The rejected test (returned to draft status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+        '403':
+          description: The user is missing sufficient privileges or the feature is not enabled
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '404':
+          description: No assessment or test matched the given ID
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '409':
+          description: Test is not in Admin Review status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
+        '422':
+          description: Failed to reject the test
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/errors"
   # V1 API - Vulnerabilities
   /v1/vulnerabilities:
     get:
