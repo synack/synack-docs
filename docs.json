@@ -41,6 +41,10 @@
             "openapi": "mission-v2-openapi.yaml"
           },
           {
+            "group": "Assessment Service v1 API",
+            "openapi": "assessment-v1-openapi.yaml"
+          },
+          {
             "group": "Platform v1 API",
             "openapi": "monolith-v1-openapi.yaml"
           },
