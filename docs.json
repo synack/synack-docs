@@ -26,7 +26,11 @@
         "groups": [
           {
             "group": "Asset Management v2 API",
-            "openapi": "asset-v2-openapi.yaml"          
+            "openapi": "asset-v2-openapi.yaml"
+          },
+          {
+            "group": "Asset Discovery API",
+            "openapi": "asset-discovery-openapi.yaml"
           },
           {
             "group": "Vulnerability Management API",

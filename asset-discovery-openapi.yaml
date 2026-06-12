@@ -1,0 +1,407 @@
+openapi: 3.0.3
+info:
+  title: Asset Discovery
+  description: RESTful API for managing seeds, seed groups used in the asset discovery process.
+  version: 0.1.0-draft003
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+tags:
+  - name: Seeds 
+    description: Collections of seeds associated with a listing.
+servers:
+  - url: https://client.synack.com/api/asset-discovery
+    description: Commercial
+  - url: https://client.synack.us/api/asset-discovery
+    description: FedRAMP (Medium)
+paths:
+  /v1/organizations/{organizationUid}/seed-groups:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+    get:
+      operationId: getSeedGroups
+      tags:
+        - Seeds 
+      description: >
+        Retrieve and filter seed groups.
+      x-mint:
+        metadata:
+          title: Get Seed Groups 
+      parameters:
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - name
+              - totalSeeds
+              - createdAt
+              - updatedAt
+              - createdBy
+              - scanStatus
+              - lastScanAt
+            default: name
+          description: Optional property to sort results by.
+        - $ref: '#/components/parameters/SortDirQuery'
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: >
+            Optional query parameter for a search string that will be used
+            to match within seed group name.
+        - in: query
+          name: tag
+          schema:
+            type: array
+            items:
+              type: string
+          required: false
+          description: >
+            Optional query parameter for a tag that will be used to filter
+            seed groups.
+      responses:
+        "200":
+          $ref: '#/components/responses/PaginatedSeedGroupsResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_or
+            - assetdiscovery_gr
+            - assetdiscovery_lr
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "login.synack.com"
+          scopes:
+            assetdiscovery_gr: Grants global-level to read seed groups and seeds.
+            assetdiscovery_or: Grants organization-level to read seed groups and seeds.
+            assetdiscovery_ow: Grants organization-level to create or modify seed groups and seeds.
+            assetdiscovery_lr: Grants listing-level to read seed groups and seeds.
+            asset_client_lw: Grants listing-level to write seed groups and seeds.
+
+  parameters:
+    OrganizationUIDPath:
+      name: organizationUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/OrganizationUID'
+      required: true
+      description: Unique identifier for an organization group.
+    PerPageQuery:
+      name: perPage
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 5000
+      required: false
+      description: >
+        Requested page size for pagination. A server-selected default of 100 will
+        be used when no perPage is requested via query parameter.
+    PageQuery:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      required: false
+      description: >
+        Page to retrieve in paginated response. A server-selected default of 1 will
+        be used when no page is requested via query parameter.
+    SortDirQuery:
+      name: sortDir
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: asc
+      required: false
+      description: Direction of sort-order for items in the response.
+
+  headers:
+    PaginationLimit:
+      description: Maximum number of items returned in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationCurrentPage:
+      description: Current page in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalPages:
+      description: Total number of pages in a paginated response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+    PaginationTotalCount:
+      description: Total number of items in all pages of a paginated response.
+      schema:
+        format: int32
+        minimum: 1
+    Link:
+      description: Standard link header.
+      schema:
+        type: string
+
+  responses:
+    PaginatedSeedGroupsResponse:
+      description: Paginated seed groups.
+      headers:
+        "Pagination-Limit":
+          $ref: '#/components/headers/PaginationLimit'
+        "Pagination-Current-Page":
+          $ref: '#/components/headers/PaginationCurrentPage'
+        "Pagination-Total-Pages":
+          $ref: '#/components/headers/PaginationTotalPages'
+        "Pagination-Total-Count":
+          $ref: '#/components/headers/PaginationTotalCount'
+        "Link":
+          $ref: '#/components/headers/Link'
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              seedGroups:
+                $ref: '#/components/schemas/ArrayOfSeedGroups'
+    401Unauthorized:
+      description: Unauthorized.
+    403Forbidden:
+      description: Forbidden
+    409Conflict:
+      description: Conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    422EntityNotProcessable:
+      description: Entity Not Processable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    500InternalServerError:
+      description: Internal Server Error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    503ServiceUnavailable:
+      description: Service Unavailable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    UID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      readOnly: true
+      description: Unique Identifier.
+
+    OrganizationUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,50}"
+      description: Unique identifier for an organization.
+
+    ListingUID:
+      type: string
+      pattern: "^[-_0-9a-z]{1,50}"
+      description: Unique identifier for an listing.
+
+    Tag:
+      type: string
+      pattern: "^[-_0-9a-zA-Z]{1,16}"
+
+    OperationUserUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      readOnly: true
+      description:
+        Automatically set by the server to the requesting user whenever the
+        resource is updated. May be a user account or a service account if
+        the action is performed by an automated.
+
+    Creatable:
+      type: object
+      required:
+        - createdAt
+        - createdBy
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Automatically set by the server to the time the request was processed whenever the resource was created.
+        createdBy:
+          $ref: '#/components/schemas/OperationUserUID'
+
+    Updatable:
+      allOf:
+        - type: object
+          properties:
+            updatedAt:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Automatically set by the server to the time the request was processed whenever the resource is updated.
+            updatedBy:
+              $ref: '#/components/schemas/OperationUserUID'
+        - $ref: '#/components/schemas/Creatable'
+
+    ArrayOfSeedGroups:
+      type: array
+      items:
+        $ref: '#/components/schemas/SeedGroup'
+
+    SeedGroup:
+      allOf:
+        - type: object
+          required:
+            - autoConfirmationEnabled
+            - limitReached
+          properties:
+            uid:
+              $ref: '#/components/schemas/UID'
+            organizationUid:
+              $ref: '#/components/schemas/OrganizationUID'
+            name:
+              type: string
+              readOnly: true
+              description: User-supplied name for this seed group.
+            listingUid:
+              $ref: '#/components/schemas/ListingUID'
+            scanStatus:
+              type: string
+              readOnly: true
+              enum:
+                - created
+                - in_progress
+                - completed
+                - failed
+            lastScanAt:
+              type: string
+              format: date-time
+              readOnly: true
+            asmEnabled:
+              type: boolean
+              readOnly: true
+              description: Indicates whether ASM is enabled for this seed group.
+            autoConfirmationEnabled:
+              type: boolean
+              description: Indicates whether discovered assets from this seed group will be created as unconfirmed or confirmed.
+            totalSeeds:
+              type: integer
+              readOnly: true
+              description: Derived count of seeds in this seed group.
+            limitReached:
+              type: boolean
+              description: Indicates that the seed group scan has reached a limit on the number of assets that can be discovered from it.
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+        - $ref: '#/components/schemas/Updatable'
+
+    ProblemDetails:
+      type: object
+      description: "See [RFC 7807: Problem Details for HTTP APIs](https://tools.ietf.org/html/rfc7807)"
+      properties:
+        type:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 511
+          description: HTTP Status code.
+          readOnly: true
+        detail:
+          type: string
+          description: Message detailing the problem.
+          readOnly: true
+        instance:
+          type: string
+          description: generated problem instance number to correlate with logs
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/FailedValidation'
+        failedValidations:
+          type: array
+          description: Array of indexed failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/IndexedFailedValidations'
+        maxBatchSize:
+          type: integer
+          description: Maximum processable batch size.
+          readOnly: true
+        batchSize:
+          type: integer
+          description: Batch size sent when batch is too large.
+          readOnly: true
+
+    FailedValidation:
+      type: object
+      required:
+        - message
+      properties:
+        property:
+          type: string
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+
+    IndexedFailedValidations:
+      type: object
+      properties:
+        index:
+          type: integer
+          description:
+            Zero-based index indicating the which item in request containing an array of items has failed validation.
+          readOnly: true
+        failedValidation:
+          type: array
+          description: Array of failed validation rules.
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/FailedValidation'
