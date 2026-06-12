@@ -60,54 +60,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /v1/{org_uid}/assets/seed_groups:
-    get:
-      x-mint:
-        metadata:
-          title: Get Seed Groups for Organization
-      summary: Returns list of seed groups by organization
-      description: Get seed groups by organization
-      operationId: getAssetSeedGroups
-      tags:
-        - Seed Groups
-      parameters:
-        - name: org_uid
-          in: path
-          description: Organization UID
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          description: Maximum number of seed group results to be returned
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Document'
-        '400':
-          description: bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Bearer token is missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
   /v1/{org_uid}/assets/{asset_uid}/listings/tests/latest:
     get:
       x-mint:
