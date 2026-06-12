@@ -18,10 +18,54 @@ security:
   - bearerAuth: []
 
 tags:
+  - name: Assessment Lifecycle
+    description: Lifecycle state transitions for an individual assessment.
   - name: Assessment Groups
     description: Users assigned to an Assessment Group, with their roles.
 
 paths:
+  /v1/organizations/{organizationUid}/assessments/{assessmentUid}/pause:
+    post:
+      summary: Pause an assessment
+      description: |
+        Pauses testing on an assessment.
+        The assessment must be in an active state to be paused.
+        Returns 409 if the assessment is not in a pausable state.
+      operationId: pauseAssessment
+      tags: [Assessment Lifecycle]
+      parameters:
+        - $ref: '#/components/parameters/OrganizationUid'
+        - $ref: '#/components/parameters/AssessmentUid'
+      responses:
+        '204':
+          description: Assessment paused successfully.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
+  /v1/organizations/{organizationUid}/assessments/{assessmentUid}/resume:
+    post:
+      summary: Resume an assessment
+      description: |
+        Resumes testing on a paused assessment.
+        The assessment must be in a paused state to be resumed.
+        Returns 409 if the assessment is not currently paused.
+      operationId: resumeAssessment
+      tags: [Assessment Lifecycle]
+      parameters:
+        - $ref: '#/components/parameters/OrganizationUid'
+        - $ref: '#/components/parameters/AssessmentUid'
+      responses:
+        '204':
+          description: Assessment resumed successfully.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+
   /v1/assessment-groups/{assessmentGroupId}/members:
     get:
       summary: List members of an Assessment Group
@@ -159,6 +203,20 @@ components:
       schema:
         type: integer
         minimum: 1
+    OrganizationUid:
+      name: organizationUid
+      in: path
+      required: true
+      description: The unique identifier of the organization.
+      schema:
+        type: string
+    AssessmentUid:
+      name: assessmentUid
+      in: path
+      required: true
+      description: The unique identifier of the assessment.
+      schema:
+        type: string
 
   schemas:
     AssessmentGroupRole:
@@ -386,12 +444,17 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     Forbidden:
-      description: Authenticated but lacks permission for this Assessment Group.
+      description: Authenticated but lacks permission for this resource.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     NotFound:
-      description: Assessment Group not found in the acting organization.
+      description: Resource not found in the acting organization.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: The resource is not in a state that permits the requested action.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
