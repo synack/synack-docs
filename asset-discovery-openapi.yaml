@@ -83,6 +83,82 @@ paths:
             - assetdiscovery_or
             - assetdiscovery_gr
             - assetdiscovery_lr
+
+  /v1/organizations/{organizationUid}/seed-groups/{seedGroupUid}/seeds:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+      - $ref: '#/components/parameters/SeedGroupUIDPath'
+    get:
+      operationId: getSeeds
+      tags:
+        - Seeds
+      description: >
+        Retrieve and filter seeds for a seed group.
+      x-mint:
+        metadata:
+          title: Get Seeds in a Seed Group
+      parameters:
+        - $ref: '#/components/parameters/PerPageQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum:
+              - name
+              - seedType
+              - createdAt
+              - updatedAt
+              - createdBy
+            default: name
+          description: Optional property to sort results by.
+        - $ref: '#/components/parameters/SortDirQuery'
+        - in: query
+          name: search
+          schema:
+            type: string
+          required: false
+          description: >
+            Optional query parameter for a search string that will be used
+            to match within seed name.
+        - in: query
+          name: seedType
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SeedType'
+          required: false
+          description: >
+            Filter the response to include only seeds with a seed type.
+        - in: query
+          name: tag
+          schema:
+            type: array
+            items:
+              type: string
+          required: false
+          description: >
+            Optional query parameter for a tag that will be used to filter seeds.
+      responses:
+        "200":
+          $ref: '#/components/responses/PaginatedSeedsResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_or
+            - assetdiscovery_gr
+            - assetdiscovery_lr
 components:
   securitySchemes:
     OAuth2:
@@ -139,6 +215,13 @@ components:
         default: asc
       required: false
       description: Direction of sort-order for items in the response.
+    SeedGroupUIDPath:
+      name: seedGroupUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/SeedGroupUID'
+      required: true
+      description: Unique identifier for a seed group.
 
   headers:
     PaginationLimit:
@@ -190,6 +273,26 @@ components:
             properties:
               seedGroups:
                 $ref: '#/components/schemas/ArrayOfSeedGroups'
+    PaginatedSeedsResponse:
+      description: Paginated seeds.
+      headers:
+        "Pagination-Limit":
+          $ref: '#/components/headers/PaginationLimit'
+        "Pagination-Current-Page":
+          $ref: '#/components/headers/PaginationCurrentPage'
+        "Pagination-Total-Pages":
+          $ref: '#/components/headers/PaginationTotalPages'
+        "Pagination-Total-Count":
+          $ref: '#/components/headers/PaginationTotalCount'
+        "Link":
+          $ref: '#/components/headers/Link'
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              seeds:
+                $ref: '#/components/schemas/ArrayOfSeeds'
     401Unauthorized:
       description: Unauthorized.
     403Forbidden:
@@ -324,6 +427,49 @@ components:
             limitReached:
               type: boolean
               description: Indicates that the seed group scan has reached a limit on the number of assets that can be discovered from it.
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+        - $ref: '#/components/schemas/Updatable'
+
+    SeedGroupUID:
+      type: string
+      pattern: "^[0-9a-f]{12}"
+      description: Unique identifier for a seed group.
+
+    SeedType:
+      type: string
+      enum:
+        - ip
+        - domain
+        - cidr
+        - ip_range
+
+    ArrayOfSeeds:
+      type: array
+      items:
+        $ref: '#/components/schemas/Seed'
+
+    Seed:
+      allOf:
+        - type: object
+          required:
+            - seedType
+            - name
+          properties:
+            uid:
+              $ref: '#/components/schemas/UID'
+            seedGroupUid:
+              $ref: '#/components/schemas/SeedGroupUID'
+            organizationUid:
+              $ref: '#/components/schemas/OrganizationUID'
+            name:
+              type: string
+              readOnly: true
+              description: User-supplied name for this seed.
+            seedType:
+              $ref: '#/components/schemas/SeedType'
             tags:
               type: array
               items:
