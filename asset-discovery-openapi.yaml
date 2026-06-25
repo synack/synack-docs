@@ -2,13 +2,15 @@ openapi: 3.0.3
 info:
   title: Asset Discovery
   description: RESTful API for managing seeds, seed groups used in the asset discovery process.
-  version: 0.1.0-draft003
+  version: "1.0"
   contact:
     name: Synack Engineering
     email: engineering@synack.com
 tags:
-  - name: Seeds 
+  - name: Seeds
     description: Collections of seeds associated with a listing.
+  - name: Tags
+    description: Tags applied to seeds and seed groups.
 servers:
   - url: https://client.synack.com/api/asset-discovery
     description: Commercial
@@ -21,12 +23,12 @@ paths:
     get:
       operationId: getSeedGroups
       tags:
-        - Seeds 
+        - Seeds
       description: >
         Retrieve and filter seed groups.
       x-mint:
         metadata:
-          title: Get Seed Groups 
+          title: Get Seed Groups
       parameters:
         - $ref: '#/components/parameters/PerPageQuery'
         - $ref: '#/components/parameters/PageQuery'
@@ -83,6 +85,137 @@ paths:
             - assetdiscovery_or
             - assetdiscovery_gr
             - assetdiscovery_lr
+    post:
+      operationId: postSeedGroup
+      tags:
+        - Seeds
+      description: >
+        Creates a new seed group and seeds if valid.
+      x-mint:
+        metadata:
+          title: Create Seed Group
+      requestBody:
+        description: Supply Asset UID for the asset to upsert
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSeedGroup'
+      responses:
+        "201":
+          $ref: '#/components/responses/SingleSeedGroupWithSeedsResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
+            - asset_client_lw
+
+  /v1/organizations/{organizationUid}/seed-groups/{seedGroupUid}:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+      - $ref: '#/components/parameters/SeedGroupUIDPath'
+    get:
+      operationId: getSeedGroup
+      tags:
+        - Seeds
+      description: >
+        Retrieves a single seed group.
+      x-mint:
+        metadata:
+          title: Get Seed Group
+      responses:
+        "200":
+          $ref: '#/components/responses/SingleSeedGroupResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_or
+    patch:
+      operationId: patchSeedGroup
+      tags:
+        - Seeds
+      description: >
+        Updates a seed group.
+      x-mint:
+        metadata:
+          title: Update Seed Group
+      requestBody:
+        description: >
+          Changed properties for a single seed group.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeedGroupUpdate'
+      responses:
+        "200":
+          $ref: '#/components/responses/SingleSeedGroupResponse'
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
+    delete:
+      operationId: deleteSeedGroup
+      tags:
+        - Seeds
+      description: >
+        Deletes a seed group. All seeds in the seed group will be deleted, and
+        any assets discovered from those seeds will be removed from the
+        listing associated with the seed group that owns the deleted seed.
+      x-mint:
+        metadata:
+          title: Delete Seed Group
+      responses:
+        "204":
+          $ref: '#/components/responses/204NoContent'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
 
   /v1/organizations/{organizationUid}/seed-groups/{seedGroupUid}/seeds:
     parameters:
@@ -159,6 +292,148 @@ paths:
             - assetdiscovery_or
             - assetdiscovery_gr
             - assetdiscovery_lr
+    post:
+      operationId: postSeed
+      tags:
+        - Seeds
+      description: >
+        Creates a new seed if valid.
+      x-mint:
+        metadata:
+          title: Create Seed
+      requestBody:
+        description: >
+          Properties of new seed.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSeed'
+      responses:
+        "201":
+          $ref: '#/components/responses/SingleSeedResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
+            - asset_client_lw
+
+  /v1/organizations/{organizationUid}/seed-groups/{seedGroupUid}/seeds/{seedUid}:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+      - $ref: '#/components/parameters/SeedGroupUIDPath'
+      - $ref: '#/components/parameters/SeedUIDPath'
+    get:
+      operationId: getSeed
+      tags:
+        - Seeds
+      description: >
+        Retrieves a single seed.
+      x-mint:
+        metadata:
+          title: Get Seed
+      responses:
+        "200":
+          $ref: '#/components/responses/SingleSeedResponse'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_or
+            - assetdiscovery_gr
+            - assetdiscovery_lr
+    delete:
+      operationId: deleteSeed
+      tags:
+        - Seeds
+      description: >
+        Delete seeds. Any assets discovered from those seeds will be removed
+        from the listing associated with the seed group that owns the deleted
+        seed.
+      x-mint:
+        metadata:
+          title: Delete Seed
+      responses:
+        "204":
+          $ref: '#/components/responses/204NoContent'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "404":
+          $ref: '#/components/responses/404NotFound'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
+
+  /v1/organizations/{organizationUid}/seed-groups/{seedGroupUid}/tags/batchUpdate:
+    parameters:
+      - $ref: '#/components/parameters/OrganizationUIDPath'
+      - $ref: '#/components/parameters/SeedGroupUIDPath'
+    post:
+      operationId: updateSeedGroupTags
+      tags:
+        - Seeds
+        - Tags
+      description: >
+        Updates a seed groups tags.
+      x-mint:
+        metadata:
+          title: Update Seed Group Tags
+      requestBody:
+        description: >
+          Tags update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchTagsUpdate'
+      responses:
+        "204":
+          $ref: '#/components/responses/204NoContent'
+        "400":
+          $ref: '#/components/responses/400BadRequest'
+        "401":
+          $ref: '#/components/responses/401Unauthorized'
+        "403":
+          $ref: '#/components/responses/403Forbidden'
+        "409":
+          $ref: '#/components/responses/409Conflict'
+        "413":
+          $ref: '#/components/responses/413RequestEntityTooLarge'
+        "422":
+          $ref: '#/components/responses/422EntityNotProcessable'
+        "500":
+          $ref: '#/components/responses/500InternalServerError'
+        "503":
+          $ref: '#/components/responses/503ServiceUnavailable'
+      security:
+        - OAuth2:
+            - assetdiscovery_ow
+
 components:
   securitySchemes:
     OAuth2:
@@ -222,8 +497,20 @@ components:
         $ref: '#/components/schemas/SeedGroupUID'
       required: true
       description: Unique identifier for a seed group.
+    SeedUIDPath:
+      name: seedUid
+      in: path
+      schema:
+        $ref: '#/components/schemas/UID'
+      required: true
+      description: Unique identifier for a seed.
 
   headers:
+    ETag:
+      description: An identifier for a specific version of a resource
+      schema:
+        type: string
+        pattern: '^(?:W\/)?\".*\"$'
     PaginationLimit:
       description: Maximum number of items returned in a paginated response.
       schema:
@@ -253,6 +540,43 @@ components:
         type: string
 
   responses:
+    SingleSeedGroupWithSeedsResponse:
+      description: The current state of the requested asset.
+      headers:
+        "ETag":
+          $ref: '#/components/headers/ETag'
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              seedGroup:
+                description: The created seed group
+                $ref: '#/components/schemas/SeedGroup'
+              failedSeedValidations:
+                type: array
+                description: Array of failed validation rules for the seeds.
+                readOnly: true
+                items:
+                  $ref: '#/components/schemas/FailedValidation'
+    SingleSeedGroupResponse:
+      description: The current state of the requested asset.
+      headers:
+        "ETag":
+          $ref: '#/components/headers/ETag'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SeedGroup'
+    SingleSeedResponse:
+      description: The current state of a scope rule.
+      headers:
+        "ETag":
+          $ref: '#/components/headers/ETag'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Seed'
     PaginatedSeedGroupsResponse:
       description: Paginated seed groups.
       headers:
@@ -293,12 +617,26 @@ components:
             properties:
               seeds:
                 $ref: '#/components/schemas/ArrayOfSeeds'
+    204NoContent:
+      description: No content.
+    400BadRequest:
+      description: Bad Request
     401Unauthorized:
       description: Unauthorized.
     403Forbidden:
       description: Forbidden
+    404NotFound:
+      description: Not found.
     409Conflict:
       description: Conflict.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    413RequestEntityTooLarge:
+      description: >
+        Returned generally when the size of the request body is too large to process, or specifically when the request
+        contains too many items, typically in a bulk API operation.
       content:
         application/problem+json:
           schema:
@@ -343,6 +681,11 @@ components:
       type: string
       pattern: "^[-_0-9a-zA-Z]{1,16}"
 
+    SeedUID:
+      type: string
+      pattern: "^[0-9a-f]{24}"
+      description: Unique identifier for a seed.
+
     OperationUserUID:
       type: string
       pattern: "^[0-9a-f]{12}"
@@ -378,6 +721,35 @@ components:
             updatedBy:
               $ref: '#/components/schemas/OperationUserUID'
         - $ref: '#/components/schemas/Creatable'
+
+    NewSeedGroup:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        autoConfirmationEnabled:
+          type: boolean
+        seeds:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewSeed'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
+    SeedGroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        asmEnabled:
+          type: boolean
+        autoConfirmationEnabled:
+          type: boolean
+          description: Indicates whether discovered assets from this seed group will be created as unconfirmed or confirmed.
 
     ArrayOfSeedGroups:
       type: array
@@ -446,6 +818,21 @@ components:
         - cidr
         - ip_range
 
+    NewSeed:
+      type: object
+      required:
+        - name
+        - seedType
+      properties:
+        name:
+          type: string
+        seedType:
+          $ref: '#/components/schemas/SeedType'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+
     ArrayOfSeeds:
       type: array
       items:
@@ -475,6 +862,36 @@ components:
               items:
                 $ref: '#/components/schemas/Tag'
         - $ref: '#/components/schemas/Updatable'
+
+    BatchTagsUpdate:
+      type: object
+      description: Tags to remove and add to seeds and seed group
+      properties:
+        seedGroupTagsToDelete:
+          type: array
+          description: Array of tags to delete from the seed group.
+          items:
+            $ref: '#/components/schemas/Tag'
+        seedGroupTagsToAdd:
+          type: array
+          description: Array of tags to add to the seed group.
+          items:
+            $ref: '#/components/schemas/Tag'
+        seedUids:
+          type: array
+          description: Array of seed uids to apply tag update to.
+          items:
+            $ref: '#/components/schemas/SeedUID'
+        seedTagsToDelete:
+          type: array
+          description: Array of tags to delete from the supplied seeds.
+          items:
+            $ref: '#/components/schemas/Tag'
+        seedTagsToAdd:
+          type: array
+          description: Array of tags to add to the supplied seeds.
+          items:
+            $ref: '#/components/schemas/Tag'
 
     ProblemDetails:
       type: object
