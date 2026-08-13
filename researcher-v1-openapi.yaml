@@ -212,6 +212,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableContent'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /v1/attachments:
     post:
       operationId: createAttachment
@@ -359,8 +361,9 @@ components:
             detail: listing not found or not accepting submissions
     Conflict:
       description: |
-        The `Idempotency-Key` was already used with a different request body. Retry with a
-        fresh key, or replay the original body to receive the original response.
+        Either the `Idempotency-Key` was already used with a different request body — retry
+        with a fresh key, or replay the original body to receive the original response — or
+        an earlier request using this key is still in flight, in which case retry shortly.
       content:
         application/problem+json:
           schema:
@@ -402,6 +405,34 @@ components:
                 type: https://synack.com/probs/file_size_exceeded
                 title: File size exceeded
                 detail: attachment login-bypass.png exceeds 5242880 bytes
+            archivedVulnerabilityCategory:
+              summary: The chosen category no longer accepts submissions
+              value:
+                type: https://synack.com/probs/archived_vulnerability_category
+                title: Archived vulnerability category
+                detail: >-
+                  The selected vulnerability category has been archived and no longer
+                  accepts submissions.
+            tooManyAttachments:
+              summary: Too many validation steps or attachments
+              value:
+                type: https://synack.com/probs/too_many_attachments
+                title: Too many attachments
+                invalidParams:
+                  - name: validationSteps
+                    reason: must contain at most 20 entries
+    InternalServerError:
+      description: |
+        The request was well formed but could not be processed. The cause is logged on the
+        Synack side and deliberately not described here. Retry with backoff; do not modify
+        the request body in response to this status.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://synack.com/probs/internal_server_error
+            title: Internal server error
   schemas:
     Problem:
       type: object
@@ -533,6 +564,7 @@ components:
         validationSteps:
           type: array
           description: Ordered reproduction steps, each optionally carrying evidence.
+          maxItems: 20
           items:
             $ref: '#/components/schemas/ValidationStep'
         collaborations:
