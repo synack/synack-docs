@@ -1,0 +1,957 @@
+openapi: 3.1.0
+info:
+  title: Synack Platform API
+  version: 1.0.0
+  summary: Public API for Synack Red Team researchers.
+  description: |
+    Token-authenticated public API for Synack Red Team (SRT) researchers.
+
+    It currently exposes vulnerability submission and the attachment upload that
+    supports it. Every operation is scoped to the researcher who owns the bearer
+    token; nothing in a request body can change that attribution.
+
+    ## Authentication
+
+    Send a bearer token in the `Authorization` header. The token must be issued for this
+    API, carrying the `srt_public_api` scope; a session token is rejected with `403`, and
+    a token issued for this API cannot be used against the session API.
+
+    ## Network requirements
+
+    Requests must originate from a LaunchPoint+ workspace gateway. A request that
+    egresses from anywhere else is rejected with `403 Forbidden`
+    (`https://synack.com/probs/workspace_connection_required`), even when the token
+    is valid.
+
+    ## Request size
+
+    Inline attachments are capped at 5 MB each and 50 per submission. Evidence larger than
+    that is uploaded through `POST /v1/attachments`, which accepts files up to 300 MB, and
+    referenced from a validation step by `id` and `secureHash`.
+
+    ## Errors
+
+    Errors follow RFC 7807 and are returned as `application/problem+json`. Validation
+    failures are `422 Unprocessable Content` and carry an `invalidParams` array naming
+    each offending field with the public (camelCase) name used in the request.
+  contact:
+    name: Synack Engineering
+    email: engineering@synack.com
+  license:
+    name: Proprietary - Synack, Inc.
+    identifier: LicenseRef-Synack-Proprietary
+servers:
+  - url: https://platform.synack.com/api
+    description: Commercial
+  - url: https://platform.synack.us/api
+    description: FedRAMP (Medium)
+security:
+  - bearerAuth: []
+tags:
+  - name: Vulnerabilities
+    description: Submit vulnerabilities against listings you are assigned to.
+  - name: Attachments
+    description: Upload evidence files that validation steps can reference.
+paths:
+  /v1/vulnerabilities:
+    post:
+      operationId: createVulnerability
+      summary: Submit a vulnerability
+      tags:
+        - Vulnerabilities
+      description: |
+        Submits a vulnerability against a listing in a single request. The submission is
+        subject to exactly the restrictions the in-app submission path enforces: the
+        listing must be live and visible to you, the vulnerability category must not be
+        archived, and every exploitable location asset and credential must be valid.
+
+        The vulnerability is always attributed to the researcher who owns the bearer
+        token.
+
+        ## Requirements
+
+        - The request must originate from a **LaunchPoint+ workspace gateway**. Requests
+          from any other network are rejected with `403 Forbidden`.
+        - The bearer token must be issued for this API, carrying the `srt_public_api`
+          scope. A session token is rejected with `403 Forbidden`.
+
+        ## Attachments
+
+        Each validation step may carry attachments in either of two shapes:
+
+        - **Inline** — `name`, `value`, `contentType` and `contentEncoding: base64`. The
+          decoded payload must not exceed 5 MiB (5242880 bytes).
+        - **Reference** — `id` and `secureHash` returned by `POST /v1/attachments`. The
+          referenced attachment must belong to you, otherwise the request is rejected
+          with `403 Forbidden`. Prefer this shape for anything larger than a small
+          screenshot.
+
+        ## Not supported in v1
+
+        The following are accepted by the in-app submission path but are deliberately
+        **not** part of this API and are ignored if sent:
+
+        - `suspectedVulnerabilityId` — a submission cannot be linked to a suspected
+          vulnerability.
+        - A submit-time conversation message — no message can be attached to the
+          submission.
+        - `sprintId` — a submission cannot be attributed to a sprint.
+        - `toolUsed` — the tool that found the vulnerability cannot be recorded.
+        - `secretGistUrl` — a secret gist cannot be attached.
+        - `extension.device` — browser-extension device metadata is always sent as null.
+        - `url`, `port`, `ipAddress` and `portType` on validation steps — a validation
+          step carries only `detail` and `attachments`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVulnerabilityRequest'
+            example:
+              listingId: aardvark-quiet
+              title: SQL injection in the login API
+              description: >-
+                The `username` parameter of POST /api/login is concatenated into a SQL
+                statement without parameterisation, allowing an unauthenticated caller to
+                read arbitrary rows from the application database.
+              impact: >-
+                An unauthenticated attacker can read every row of the users table,
+                including password hashes and password reset tokens, and can escalate to
+                full account takeover of any account including administrators.
+              recommendedFix: >-
+                Use parameterised queries or a prepared statement for the login lookup and
+                reject usernames that do not match ^[A-Za-z0-9_.-]{3,64}$.
+              cvssVector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+              source: srt
+              vulnerabilityCategory: injection/sql
+              exploitableLocations:
+                - type: url
+                  value: https://api.example.com/api/login
+                  assetsUids:
+                    - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
+                - type: ip
+                  address: 203.0.113.42
+                  port: '8443'
+                  protocol: tcp
+              httpRequests:
+                - httpRequest: |
+                    POST /api/login HTTP/1.1
+                    Host: api.example.com
+                    Content-Type: application/json
+
+                    {"username":"admin' OR 1=1 -- ","password":"x"}
+                  vulnParam: username
+                  attackPayload: "' OR 1=1 -- "
+              validationSteps:
+                - detail: >-
+                    Send the request above to https://api.example.com/api/login and observe
+                    that the response is 200 with a session cookie for the admin account.
+                  attachments:
+                    - name: login-bypass.png
+                      contentType: image/png
+                      contentEncoding: base64
+                      value: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+                - detail: >-
+                    Repeat with the payload "' UNION SELECT email, password_digest FROM
+                    users -- " and observe the credentials in the response body.
+                  attachments:
+                    - id: 8412773
+                      secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+              collaborations:
+                - userSlug: 7d1f4c2b
+                  percentage: 0.25
+              cvesCwes:
+                - CVE-2024-12345
+                - CWE-89
+      responses:
+        '201':
+          description: The vulnerability was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulnerabilityEnvelope'
+              example:
+                vulnerability:
+                  id: 918273
+                  listingId: aardvark-quiet
+                  title: SQL injection in the login API
+                  description: >-
+                    The `username` parameter of POST /api/login is concatenated into a SQL
+                    statement without parameterisation, allowing an unauthenticated caller
+                    to read arbitrary rows from the application database.
+                  impact: >-
+                    An unauthenticated attacker can read every row of the users table,
+                    including password hashes and password reset tokens.
+                  recommendedFix: >-
+                    Use parameterised queries or a prepared statement for the login lookup.
+                  vulnerabilityCategory: injection
+                  vulnerabilitySubcategory: sql
+                  state: in_review
+                  cvssVersion: '3.1'
+                  cvssFinal: 9.8
+                  source: srt
+                  createdAt: '2026-08-13T14:22:05Z'
+                metadata: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/attachments:
+    post:
+      operationId: createAttachment
+      summary: Upload an attachment
+      tags:
+        - Attachments
+      description: |
+        Uploads a single evidence file and returns its `id` and `secureHash`, which a
+        validation step of `POST /v1/vulnerabilities` can reference instead of inlining
+        base64. The attachment belongs to the researcher who owns the bearer token and
+        can only be referenced by that researcher.
+
+        As with vulnerability submission, the request must originate from a LaunchPoint+
+        workspace gateway and carry a token issued for this API.
+
+        The uploaded file must be one of the supported evidence formats — images
+        (`image/png`, `image/jpeg`, `image/tiff`), video (`video/mp4`, `video/webm`,
+        `video/quicktime`, `video/mpeg`, `video/ogg`, `video/avi`), documents
+        (`application/pdf`, Word, Excel, PowerPoint), archives (`application/zip`,
+        `application/x-gzip`, `application/x-tar`) or text (`text/plain`, `text/csv`,
+        `text/rtf`, `text/html`) — and its extension must match its content type.
+
+        Files may be up to 300 MB. A larger file, an unsupported type, or an extension that
+        does not match the content type is rejected with `422 Unprocessable Content`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateAttachmentRequest'
+            example:
+              file: (binary contents of login-bypass.png)
+            encoding:
+              file:
+                contentType: image/png, image/jpeg, application/pdf, video/mp4, text/plain
+      responses:
+        '201':
+          description: The attachment was stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentEnvelope'
+              example:
+                attachment:
+                  id: 8412773
+                  fileName: login-bypass.png
+                  fileSize: 184320
+                  contentType: image/png
+                  secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+                  url: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
+                metadata: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableContent'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer token issued for the Synack Platform API, carrying the `srt_public_api`
+        scope.
+  responses:
+    Unauthorized:
+      description: |
+        No bearer token was supplied, or the token is invalid or expired. The response
+        carries a `WWW-Authenticate: Bearer realm="Synack Platform API"` header.
+      headers:
+        WWW-Authenticate:
+          description: Authentication scheme expected by this API.
+          schema:
+            type: string
+          example: Bearer realm="Synack Platform API"
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://synack.com/probs/unauthenticated
+            title: Authentication required
+            detail: This endpoint requires a bearer token issued for the Synack Platform API.
+    Forbidden:
+      description: |
+        The token is valid but the request is not allowed: the token was not issued for
+        this API, the request did not egress a LaunchPoint+ workspace gateway, the
+        researcher is not eligible to submit, or a referenced attachment belongs to
+        someone else.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            workspaceConnectionRequired:
+              summary: Not connected through LaunchPoint+
+              value:
+                type: https://synack.com/probs/workspace_connection_required
+                title: LaunchPoint+ connection required
+                detail: Requests to this endpoint must originate from a LaunchPoint+ workspace gateway.
+            forbiddenScope:
+              summary: Token not issued for this API
+              value:
+                type: https://synack.com/probs/forbidden_scope
+                title: Token not valid for this API
+                detail: The supplied token was not issued for the Synack Platform API.
+            researcherNotEligible:
+              summary: Researcher not eligible
+              value:
+                type: https://synack.com/probs/researcher_not_eligible
+                title: Researcher not eligible
+                detail: The researcher must have completed identity verification and signed the current terms.
+            attachmentNotAccessible:
+              summary: Referenced attachment is not yours
+              value:
+                type: https://synack.com/probs/attachment_not_accessible
+                title: Attachment not accessible
+                detail: The referenced attachment does not exist or does not belong to the authenticated researcher.
+    NotFound:
+      description: |
+        The referenced listing does not exist, is not visible to you, or is not currently
+        accepting submissions. Listing visibility is deliberately not distinguished from
+        non-existence.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://synack.com/probs/http_not_found
+            title: Endpoint or resource not found
+            detail: listing not found or not accepting submissions
+    UnprocessableContent:
+      description: |
+        The body parsed but failed validation. `invalidParams` names each offending field
+        using the public camelCase name.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            missingRequiredParameters:
+              summary: A required field is absent
+              value:
+                type: https://synack.com/probs/missing_required_parameters
+                title: Missing required parameters
+                invalidParams:
+                  - name: cvssVector
+                    reason: is required
+            invalidParameters:
+              summary: A field failed validation
+              value:
+                type: https://synack.com/probs/invalid_parameters
+                title: Your parameters did not validate
+                invalidParams:
+                  - name: title
+                    reason: is too long (maximum is 255 characters)
+                  - name: description
+                    reason: is too short (minimum is 10 characters)
+            invalidInlineAttachment:
+              summary: An inline attachment is not a storable file
+              value:
+                type: https://synack.com/probs/invalid_parameters
+                title: Your parameters did not validate
+                invalidParams:
+                  - name: validationSteps[].attachments[].gcs_file
+                    reason: attachment login-bypass.png file extension does not match content type
+            fileSizeExceeded:
+              summary: An inline attachment is too large
+              value:
+                type: https://synack.com/probs/file_size_exceeded
+                title: File size exceeded
+                detail: attachment login-bypass.png exceeds 5242880 bytes
+            archivedVulnerabilityCategory:
+              summary: The chosen category no longer accepts submissions
+              value:
+                type: https://synack.com/probs/archived_vulnerability_category
+                title: Archived vulnerability category
+                detail: >-
+                  The selected vulnerability category has been archived and no longer
+                  accepts submissions.
+            tooManyAttachments:
+              summary: Too many validation steps or attachments
+              value:
+                type: https://synack.com/probs/too_many_attachments
+                title: Too many attachments
+                invalidParams:
+                  - name: validationSteps
+                    reason: must contain at most 50 attachments in total
+    InternalServerError:
+      description: |
+        The request was well formed but could not be processed. The cause is logged on the
+        Synack side and deliberately not described here. Retry with backoff; do not modify
+        the request body in response to this status.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://synack.com/probs/internal_server_error
+            title: Internal server error
+  schemas:
+    Problem:
+      type: object
+      description: RFC 7807 problem details object.
+      required:
+        - type
+        - title
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI identifying the problem type.
+          example: https://synack.com/probs/invalid_parameters
+        title:
+          type: string
+          description: Short, human-readable summary of the problem type.
+          example: Your parameters did not validate
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+          example: One or more parameters provided in the request body failed validation checks.
+        invalidParams:
+          type: array
+          description: Present on validation problems. One entry per offending field.
+          items:
+            $ref: '#/components/schemas/InvalidParam'
+      example:
+        type: https://synack.com/probs/invalid_parameters
+        title: Your parameters did not validate
+        invalidParams:
+          - name: cvssVector
+            reason: is invalid
+    InvalidParam:
+      type: object
+      required:
+        - name
+        - reason
+      properties:
+        name:
+          type: string
+          description: Public camelCase name of the offending field.
+          example: cvssVector
+        reason:
+          type: string
+          description: Why the value was rejected.
+          example: is invalid
+      example:
+        name: cvssVector
+        reason: is invalid
+    CreateVulnerabilityRequest:
+      type: object
+      required:
+        - listingId
+        - title
+        - description
+        - impact
+        - recommendedFix
+        - cvssVector
+        - source
+        - exploitableLocations
+      properties:
+        listingId:
+          type: string
+          description: Slug of the listing the vulnerability was found on.
+          maxLength: 255
+          example: aardvark-quiet
+        title:
+          type: string
+          description: Short title of the vulnerability.
+          minLength: 1
+          maxLength: 255
+          example: SQL injection in the login API
+        description:
+          type: string
+          description: Detailed description of the vulnerability.
+          minLength: 10
+          maxLength: 21000
+          example: The `username` parameter of POST /api/login is concatenated into a SQL statement without parameterisation.
+        impact:
+          type: string
+          description: Business and technical impact of the vulnerability.
+          minLength: 10
+          maxLength: 21000
+          example: An unauthenticated attacker can read every row of the users table, including password hashes.
+        recommendedFix:
+          type: string
+          description: Remediation guidance for the customer.
+          minLength: 1
+          maxLength: 22000
+          example: Use parameterised queries or a prepared statement for the login lookup.
+        cvssVector:
+          type: string
+          description: CVSS v3.0 or v3.1 base vector. The CVSS version and score are derived from it.
+          pattern: ^CVSS:3\.[01]/AV:[NALP]/AC:[LH]/PR:[NLH]/UI:[NR]/S:[UC]/C:[NLH]/I:[NLH]/A:[NLH]$
+          example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+        source:
+          type: string
+          description: Origin of the submission.
+          enum:
+            - srt
+            - sara
+          example: srt
+        vulnerabilityCategory:
+          type: string
+          description: |
+            Category of the vulnerability. Omit it, or send `other/other`, to use
+            `vulnerabilityCategoryOther` instead.
+          maxLength: 255
+          example: injection/sql
+        vulnerabilityCategoryOther:
+          type: string
+          description: |
+            Free-text category, used when `vulnerabilityCategory` is absent or
+            `other/other`. Defaults to `Not categorized`.
+          maxLength: 255
+          example: Business logic flaw in the refund workflow
+        exploitableLocations:
+          type: array
+          description: Where the vulnerability can be exploited. At least one is required.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ExploitableLocation'
+        httpRequests:
+          type: array
+          description: |
+            HTTP requests demonstrating the vulnerability. Blank fields default to `N/A`.
+          items:
+            $ref: '#/components/schemas/HttpRequest'
+        validationSteps:
+          type: array
+          description: |
+            Ordered reproduction steps, each optionally carrying evidence. At most 50
+            attachments across all steps combined, regardless of how they are distributed.
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ValidationStep'
+        collaborations:
+          type: array
+          description: |
+            Researchers to share the payout with. Percentages are fractions of the payout
+            and must sum to no more than 0.95.
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/Collaboration'
+        cvesCwes:
+          type: array
+          description: |
+            CVE and CWE identifiers associated with the vulnerability. Duplicates are
+            discarded, and the remaining codes must come to no more than 100 characters once
+            joined — which binds well before `maxItems` does, at roughly seven CVE codes.
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 64
+          example:
+            - CVE-2024-12345
+            - CWE-89
+    ExploitableLocation:
+      type: object
+      description: |
+        Use `type: url`, `file`, `app-location` or `other` together with `value`. Use
+        `type: ip` together with `address`, `port` and `protocol`.
+
+        Leave `assetsUids` or `credentialsUids` out when none apply — the location is then
+        recorded as not applicable for that side.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Kind of location, which decides the other fields that apply.
+          enum:
+            - app-location
+            - file
+            - ip
+            - other
+            - url
+          example: url
+        value:
+          type: string
+          description: The location itself. Used with type `url`, `file`, `app-location` and `other`.
+          maxLength: 4096
+          example: https://api.example.com/api/login
+        address:
+          type: string
+          description: IP address. Used with type `ip`.
+          maxLength: 45
+          example: 203.0.113.42
+        port:
+          type: string
+          description: Port number. Used with type `ip`.
+          pattern: ^\d{1,5}$
+          example: '8443'
+        protocol:
+          type: string
+          description: Transport protocol. Used with type `ip`.
+          maxLength: 16
+          example: tcp
+        assetsUids:
+          type: array
+          description: UIDs of the in-scope assets this location belongs to.
+          items:
+            type: string
+            format: uuid
+          example:
+            - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
+        credentialsUids:
+          type: array
+          description: UIDs of the provided credentials used at this location.
+          items:
+            type: string
+            format: uuid
+          example:
+            - 2c8b7a6d-5e4f-4a3b-8c1d-0e9f8a7b6c5d
+      example:
+        type: url
+        value: https://api.example.com/api/login
+        assetsUids:
+          - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
+    HttpRequest:
+      type: object
+      description: A raw HTTP request demonstrating the vulnerability.
+      properties:
+        httpRequest:
+          type: string
+          description: Raw HTTP request. Defaults to `N/A` when blank.
+          maxLength: 100000
+          example: |
+            POST /api/login HTTP/1.1
+            Host: api.example.com
+
+            {"username":"admin' OR 1=1 -- ","password":"x"}
+        vulnParam:
+          type: string
+          description: Name of the vulnerable parameter. Defaults to `N/A` when blank.
+          maxLength: 1024
+          example: username
+        attackPayload:
+          type: string
+          description: Payload sent in the vulnerable parameter. Defaults to `N/A` when blank.
+          maxLength: 100000
+          example: "' OR 1=1 -- "
+      example:
+        httpRequest: |
+          POST /api/login HTTP/1.1
+          Host: api.example.com
+
+          {"username":"admin' OR 1=1 -- ","password":"x"}
+        vulnParam: username
+        attackPayload: "' OR 1=1 -- "
+    ValidationStep:
+      type: object
+      description: |
+        One reproduction step. Only `detail` and `attachments` are supported in v1 — the
+        `url`, `port`, `ipAddress` and `portType` fields of the in-app submission form are
+        not part of this API.
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: What to do in this step and what to observe.
+          minLength: 1
+          maxLength: 21000
+          example: Send the request above and observe a 200 response with an admin session cookie.
+        attachments:
+          type: array
+          description: Evidence for this step, either inlined or referenced by id.
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/ValidationStepAttachment'
+      example:
+        detail: Send the request above and observe a 200 response with an admin session cookie.
+        attachments:
+          - id: 8412773
+            secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+    ValidationStepAttachment:
+      description: |
+        Evidence attached to a validation step, in one of two shapes: inline base64
+        content, or a reference to a file already uploaded via `POST /v1/attachments`.
+      oneOf:
+        - $ref: '#/components/schemas/InlineAttachment'
+        - $ref: '#/components/schemas/AttachmentReference'
+      example:
+        id: 8412773
+        secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+    InlineAttachment:
+      type: object
+      title: Inline attachment
+      description: |
+        A file inlined in the submission body. Prefer `POST /v1/attachments` and the
+        reference shape for anything larger than a small screenshot.
+      required:
+        - name
+        - value
+        - contentType
+        - contentEncoding
+      properties:
+        name:
+          type: string
+          description: File name, including an extension that matches `contentType`.
+          minLength: 1
+          maxLength: 255
+          example: login-bypass.png
+        value:
+          type: string
+          description: |
+            Base64-encoded file content. The decoded payload must not exceed 5242880 bytes
+            (5 MiB), which is roughly 6990508 characters once encoded.
+          contentEncoding: base64
+          maxLength: 6990508
+          example: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+        contentType:
+          type: string
+          description: |
+            MIME type of the decoded content. The same evidence formats `POST /v1/attachments`
+            accepts apply here, and `name` must carry a matching extension.
+          example: image/png
+        contentEncoding:
+          type: string
+          description: Encoding of `value`.
+          enum:
+            - base64
+          example: base64
+      example:
+        name: login-bypass.png
+        value: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+        contentType: image/png
+        contentEncoding: base64
+    AttachmentReference:
+      type: object
+      title: Attachment reference
+      description: |
+        A reference to a file already uploaded with `POST /v1/attachments`. Both `id` and
+        `secureHash` must match, and the attachment must belong to the authenticated
+        researcher, or the request is rejected with 403.
+      required:
+        - id
+        - secureHash
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifier returned by `POST /v1/attachments`.
+          example: 8412773
+        secureHash:
+          type: string
+          description: Hash returned by `POST /v1/attachments` alongside the id.
+          pattern: ^[0-9a-f]{32}$
+          example: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+      example:
+        id: 8412773
+        secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+    Collaboration:
+      type: object
+      description: A researcher sharing in the payout for this vulnerability.
+      required:
+        - userSlug
+        - percentage
+      properties:
+        userSlug:
+          type: string
+          description: Slug of the collaborating researcher.
+          minLength: 1
+          maxLength: 255
+          example: 7d1f4c2b
+        percentage:
+          type: number
+          format: double
+          description: |
+            Fraction of the payout shared with this collaborator. The percentages of all
+            collaborators must sum to no more than 0.95.
+          minimum: 0.05
+          maximum: 0.95
+          example: 0.25
+      example:
+        userSlug: 7d1f4c2b
+        percentage: 0.25
+    CreateAttachmentRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The evidence file to upload.
+    VulnerabilityEnvelope:
+      type: object
+      required:
+        - vulnerability
+        - metadata
+      properties:
+        vulnerability:
+          $ref: '#/components/schemas/Vulnerability'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+      example:
+        vulnerability:
+          id: 918273
+          listingId: aardvark-quiet
+          title: SQL injection in the login API
+          state: in_review
+          cvssVersion: '3.1'
+          cvssFinal: 9.8
+          source: srt
+          createdAt: '2026-08-13T14:22:05Z'
+        metadata: {}
+    Vulnerability:
+      type: object
+      description: |
+        The created vulnerability. Properties that have no value are omitted rather than
+        returned as null.
+      required:
+        - id
+        - title
+        - state
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifier of the vulnerability.
+          example: 918273
+        listingId:
+          type: string
+          description: Slug of the listing the vulnerability was submitted against.
+          example: aardvark-quiet
+        title:
+          type: string
+          example: SQL injection in the login API
+        description:
+          type: string
+          example: The `username` parameter of POST /api/login is concatenated into a SQL statement.
+        impact:
+          type: string
+          example: An unauthenticated attacker can read every row of the users table.
+        recommendedFix:
+          type: string
+          example: Use parameterised queries or a prepared statement for the login lookup.
+        vulnerabilityCategory:
+          type: string
+          description: Parent category name.
+          example: injection
+        vulnerabilitySubcategory:
+          type: string
+          description: Child category name.
+          example: sql
+        state:
+          type: string
+          description: Review state of the vulnerability.
+          example: in_review
+        cvssVersion:
+          type: string
+          description: CVSS version derived from the submitted vector.
+          example: '3.1'
+        cvssFinal:
+          type: number
+          format: double
+          description: CVSS base score derived from the submitted vector, rounded to two decimals.
+          example: 9.8
+        source:
+          type: string
+          example: srt
+        createdAt:
+          type: string
+          format: date-time
+          description: RFC 3339 submission timestamp.
+          example: '2026-08-13T14:22:05Z'
+        resolvedAt:
+          type: string
+          format: date-time
+          description: RFC 3339 resolution timestamp. Absent until the vulnerability is resolved.
+          example: '2026-08-14T09:03:11Z'
+      example:
+        id: 918273
+        listingId: aardvark-quiet
+        title: SQL injection in the login API
+        vulnerabilityCategory: injection
+        vulnerabilitySubcategory: sql
+        state: in_review
+        cvssVersion: '3.1'
+        cvssFinal: 9.8
+        source: srt
+        createdAt: '2026-08-13T14:22:05Z'
+    AttachmentEnvelope:
+      type: object
+      required:
+        - attachment
+        - metadata
+      properties:
+        attachment:
+          $ref: '#/components/schemas/Attachment'
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+      example:
+        attachment:
+          id: 8412773
+          fileName: login-bypass.png
+          fileSize: 184320
+          contentType: image/png
+          secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+          url: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
+        metadata: {}
+    Attachment:
+      type: object
+      description: |
+        A stored evidence file. Use `id` and `secureHash` to reference it from a
+        validation step.
+      required:
+        - id
+        - secureHash
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 8412773
+        fileName:
+          type: string
+          example: login-bypass.png
+        fileSize:
+          type: integer
+          format: int64
+          description: Size of the stored file in bytes.
+          example: 184320
+        contentType:
+          type: string
+          example: image/png
+        secureHash:
+          type: string
+          description: Hash that must accompany `id` when referencing this attachment.
+          pattern: ^[0-9a-f]{32}$
+          example: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+        url:
+          type: string
+          format: uri
+          description: Signed download URL, valid for two hours.
+          example: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
+      example:
+        id: 8412773
+        fileName: login-bypass.png
+        fileSize: 184320
+        contentType: image/png
+        secureHash: 6f1c8a0d9b7e4f2a1c3d5e6f7a8b9c0d
+        url: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
+    Metadata:
+      type: object
+      description: |
+        Reserved for response metadata such as pagination. Always an empty object for these
+        operations.
+      additionalProperties: true
+      example: {}
