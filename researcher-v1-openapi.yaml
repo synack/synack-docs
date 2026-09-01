@@ -12,10 +12,9 @@ info:
 
     ## Authentication
 
-    Send a bearer token in the `Authorization` header. Tokens are generated in the
-    SRT portal: click your profile image, then **API**, then **Tokens**. A token
-    issued for this API cannot be used against the session API, and a session
-    token cannot be used here.
+    Send a bearer token in the `Authorization` header. The token must be issued for this
+    API, carrying the `srt_public_api` scope; a session token is rejected with `403`, and
+    a token issued for this API cannot be used against the session API.
 
     ## Network requirements
 
@@ -23,6 +22,12 @@ info:
     egresses from anywhere else is rejected with `403 Forbidden`
     (`https://synack.com/probs/workspace_connection_required`), even when the token
     is valid.
+
+    ## Request size
+
+    Inline attachments are capped at 5 MB each and 50 per submission. Evidence larger than
+    that is uploaded through `POST /v1/attachments`, which accepts files up to 300 MB, and
+    referenced from a validation step by `id` and `secureHash`.
 
     ## Errors
 
@@ -36,16 +41,10 @@ info:
     name: Proprietary - Synack, Inc.
     identifier: LicenseRef-Synack-Proprietary
 servers:
-  - url: https://platform.dev.syn/api
-    description: Development
-  - url: https://platform.ks-qa.synack.com/api
-    description: QA
-  - url: https://platform.staging.synack.com/api
-    description: Staging
   - url: https://platform.synack.com/api
-    description: Production
+    description: Commercial
   - url: https://platform.synack.us/api
-    description: Production (FedRAMP)
+    description: FedRAMP (Medium)
 security:
   - bearerAuth: []
 tags:
@@ -73,11 +72,8 @@ paths:
 
         - The request must originate from a **LaunchPoint+ workspace gateway**. Requests
           from any other network are rejected with `403 Forbidden`.
-        - The bearer token must be issued for this API. Tokens are generated in the SRT
-          portal under your **profile image -> API -> Tokens**.
-        - An `Idempotency-Key` header is required. Replaying the same key with the same
-          body returns the original `201` response without creating a second
-          vulnerability; reusing it with a different body returns `409 Conflict`.
+        - The bearer token must be issued for this API, carrying the `srt_public_api`
+          scope. A session token is rejected with `403 Forbidden`.
 
         ## Attachments
 
@@ -105,8 +101,6 @@ paths:
         - `extension.device` — browser-extension device metadata is always sent as null.
         - `url`, `port`, `ipAddress` and `portType` on validation steps — a validation
           step carries only `detail` and `attachments`.
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -133,16 +127,12 @@ paths:
               exploitableLocations:
                 - type: url
                   value: https://api.example.com/api/login
-                  assetsNa: false
                   assetsUids:
                     - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
-                  credentialsNa: true
                 - type: ip
                   address: 203.0.113.42
                   port: '8443'
                   protocol: tcp
-                  assetsNa: true
-                  credentialsNa: true
               httpRequests:
                 - httpRequest: |
                     POST /api/login HTTP/1.1
@@ -208,8 +198,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableContent'
         '500':
@@ -227,8 +215,7 @@ paths:
         can only be referenced by that researcher.
 
         As with vulnerability submission, the request must originate from a LaunchPoint+
-        workspace gateway, and tokens are generated in the SRT portal under your
-        **profile image -> API -> Tokens**.
+        workspace gateway and carry a token issued for this API.
 
         The uploaded file must be one of the supported evidence formats — images
         (`image/png`, `image/jpeg`, `image/tiff`), video (`video/mp4`, `video/webm`,
@@ -236,6 +223,9 @@ paths:
         (`application/pdf`, Word, Excel, PowerPoint), archives (`application/zip`,
         `application/x-gzip`, `application/x-tar`) or text (`text/plain`, `text/csv`,
         `text/rtf`, `text/html`) — and its extension must match its content type.
+
+        Files may be up to 300 MB. A larger file, an unsupported type, or an extension that
+        does not match the content type is rejected with `422 Unprocessable Content`.
       requestBody:
         required: true
         content:
@@ -275,23 +265,8 @@ components:
       type: http
       scheme: bearer
       description: |
-        Bearer token issued for the Synack Platform API. Generate one in the SRT portal
-        under your profile image -> API -> Tokens.
-  parameters:
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: true
-      description: |
-        Client-generated key that makes the submission safe to retry. Replaying the same
-        key with the same body returns the original response without creating a second
-        vulnerability. Reusing the key with a different body returns 409. Keys are scoped
-        to the token holder and are retained for 24 hours.
-      schema:
-        type: string
-        minLength: 8
-        maxLength: 255
-      example: 1b0a5f6e-7c3d-4b8a-9e21-5f6a7b8c9d01
+        Bearer token issued for the Synack Platform API, carrying the `srt_public_api`
+        scope.
   responses:
     Unauthorized:
       description: |
@@ -359,19 +334,6 @@ components:
             type: https://synack.com/probs/http_not_found
             title: Endpoint or resource not found
             detail: listing not found or not accepting submissions
-    Conflict:
-      description: |
-        Either the `Idempotency-Key` was already used with a different request body — retry
-        with a fresh key, or replay the original body to receive the original response — or
-        an earlier request using this key is still in flight, in which case retry shortly.
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-          example:
-            type: https://synack.com/probs/idempotency_key_conflict
-            title: Idempotency key reused
-            detail: This Idempotency-Key was already used with a different request body.
     UnprocessableContent:
       description: |
         The body parsed but failed validation. `invalidParams` names each offending field
@@ -399,6 +361,14 @@ components:
                     reason: is too long (maximum is 255 characters)
                   - name: description
                     reason: is too short (minimum is 10 characters)
+            invalidInlineAttachment:
+              summary: An inline attachment is not a storable file
+              value:
+                type: https://synack.com/probs/invalid_parameters
+                title: Your parameters did not validate
+                invalidParams:
+                  - name: validationSteps[].attachments[].gcs_file
+                    reason: attachment login-bypass.png file extension does not match content type
             fileSizeExceeded:
               summary: An inline attachment is too large
               value:
@@ -420,7 +390,7 @@ components:
                 title: Too many attachments
                 invalidParams:
                   - name: validationSteps
-                    reason: must contain at most 20 entries
+                    reason: must contain at most 50 attachments in total
     InternalServerError:
       description: |
         The request was well formed but could not be processed. The cause is logged on the
@@ -496,7 +466,7 @@ components:
       properties:
         listingId:
           type: string
-          description: Slug or numeric id of the listing the vulnerability was found on.
+          description: Slug of the listing the vulnerability was found on.
           maxLength: 255
           example: aardvark-quiet
         title:
@@ -563,8 +533,10 @@ components:
             $ref: '#/components/schemas/HttpRequest'
         validationSteps:
           type: array
-          description: Ordered reproduction steps, each optionally carrying evidence.
-          maxItems: 20
+          description: |
+            Ordered reproduction steps, each optionally carrying evidence. At most 50
+            attachments across all steps combined, regardless of how they are distributed.
+          maxItems: 50
           items:
             $ref: '#/components/schemas/ValidationStep'
         collaborations:
@@ -577,7 +549,11 @@ components:
             $ref: '#/components/schemas/Collaboration'
         cvesCwes:
           type: array
-          description: CVE and CWE identifiers associated with the vulnerability.
+          description: |
+            CVE and CWE identifiers associated with the vulnerability. Duplicates are
+            discarded, and the remaining codes must come to no more than 100 characters once
+            joined — which binds well before `maxItems` does, at roughly seven CVE codes.
+          maxItems: 100
           items:
             type: string
             maxLength: 64
@@ -589,6 +565,9 @@ components:
       description: |
         Use `type: url`, `file`, `app-location` or `other` together with `value`. Use
         `type: ip` together with `address`, `port` and `protocol`.
+
+        Leave `assetsUids` or `credentialsUids` out when none apply — the location is then
+        recorded as not applicable for that side.
       required:
         - type
       properties:
@@ -622,10 +601,6 @@ components:
           description: Transport protocol. Used with type `ip`.
           maxLength: 16
           example: tcp
-        assetsNa:
-          type: boolean
-          description: Set to true when no in-scope asset applies to this location.
-          example: false
         assetsUids:
           type: array
           description: UIDs of the in-scope assets this location belongs to.
@@ -634,10 +609,6 @@ components:
             format: uuid
           example:
             - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
-        credentialsNa:
-          type: boolean
-          description: Set to true when no provided credentials were used at this location.
-          example: true
         credentialsUids:
           type: array
           description: UIDs of the provided credentials used at this location.
@@ -649,10 +620,8 @@ components:
       example:
         type: url
         value: https://api.example.com/api/login
-        assetsNa: false
         assetsUids:
           - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
-        credentialsNa: true
     HttpRequest:
       type: object
       description: A raw HTTP request demonstrating the vulnerability.
@@ -702,7 +671,7 @@ components:
         attachments:
           type: array
           description: Evidence for this step, either inlined or referenced by id.
-          maxItems: 10
+          maxItems: 25
           items:
             $ref: '#/components/schemas/ValidationStepAttachment'
       example:
@@ -748,7 +717,9 @@ components:
           example: iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
         contentType:
           type: string
-          description: MIME type of the decoded content.
+          description: |
+            MIME type of the decoded content. The same evidence formats `POST /v1/attachments`
+            accepts apply here, and `name` must carry a matching extension.
           example: image/png
         contentEncoding:
           type: string

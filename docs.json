@@ -9,21 +9,17 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "products": [
       {
-        "tab": "Guides",
+        "product": "Client API",
+        "icon": "building",
         "groups": [
           {
             "group": "Getting started",
             "pages": [
               "index"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "Client API Reference",
-        "groups": [
+          },
           {
             "group": "Asset Management v2 API",
             "openapi": "asset-v2-openapi.yaml"
@@ -59,11 +55,15 @@
         ]
       },
       {
-        "tab": "Researcher API Reference",
+        "product": "Researcher API",
+        "icon": "user-secret",
         "groups": [
           {
             "group": "Platform v1 API",
-            "openapi": "researcher-v1-openapi.yaml"
+            "openapi": {
+              "source": "researcher-v1-openapi.yaml",
+              "directory": "platform"
+            }
           }
         ]
       }
@@ -75,15 +75,15 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
