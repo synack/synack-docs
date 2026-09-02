@@ -4,36 +4,18 @@ info:
   version: 1.0.0
   summary: Public API for Synack Red Team researchers.
   description: |
-    Token-authenticated public API for Synack Red Team (SRT) researchers.
-
-    It currently exposes vulnerability submission and the attachment upload that
-    supports it. Every operation is scoped to the researcher who owns the bearer
-    token; nothing in a request body can change that attribution.
-
-    ## Authentication
-
-    Send a bearer token in the `Authorization` header. The token must be issued for this
-    API, carrying the `srt_public_api` scope; a session token is rejected with `403`, and
-    a token issued for this API cannot be used against the session API.
-
-    ## Network requirements
+    Public API for Synack Red Team researchers. It exposes vulnerability submission and
+    the attachment upload that supports it. Send a bearer token in the `Authorization`
+    header; every operation is scoped to the researcher who owns that token.
 
     Requests must originate from a LaunchPoint+ workspace gateway. A request that
     egresses from anywhere else is rejected with `403 Forbidden`
-    (`https://synack.com/probs/workspace_connection_required`), even when the token
-    is valid.
+    (`https://synack.com/probs/workspace_connection_required`), even when the token is
+    valid.
 
-    ## Request size
-
-    Inline attachments are capped at 5 MB each and 50 per submission. Evidence larger than
-    that is uploaded through `POST /v1/attachments`, which accepts files up to 300 MB, and
-    referenced from a validation step by `id` and `secureHash`.
-
-    ## Errors
-
-    Errors follow RFC 7807 and are returned as `application/problem+json`. Validation
-    failures are `422 Unprocessable Content` and carry an `invalidParams` array naming
-    each offending field with the public (camelCase) name used in the request.
+    Errors follow [RFC 9457](https://datatracker.ietf.org/doc/html/rfc9457) and are
+    returned as `application/problem+json`. Validation failures are `422 Unprocessable
+    Content` and carry an `invalidParams` array naming each offending field.
   contact:
     name: Synack Engineering
     email: engineering@synack.com
@@ -45,13 +27,16 @@ servers:
     description: Commercial
   - url: https://platform.synack.us/api
     description: FedRAMP (Medium)
+
 security:
   - bearerAuth: []
+
 tags:
   - name: Vulnerabilities
     description: Submit vulnerabilities against listings you are assigned to.
   - name: Attachments
     description: Upload evidence files that validation steps can reference.
+
 paths:
   /v1/vulnerabilities:
     post:
@@ -59,48 +44,28 @@ paths:
       summary: Submit a vulnerability
       tags:
         - Vulnerabilities
-      description: |
-        Submits a vulnerability against a listing in a single request. The submission is
-        subject to exactly the restrictions the in-app submission path enforces: the
-        listing must be live and visible to you, the vulnerability category must not be
-        archived, and every exploitable location asset and credential must be valid.
+      description: >
+        Submits a vulnerability against a listing in a single request. The listing must be
+        live and visible to you, the vulnerability category must not be archived, and every
+        exploitable location asset and credential must be valid. These are the same
+        restrictions the in-app submission path enforces.
 
-        The vulnerability is always attributed to the researcher who owns the bearer
-        token.
+        The vulnerability is attributed to the researcher who owns the bearer token.
 
-        ## Requirements
+        The request must originate from a LaunchPoint+ workspace gateway. Requests from any
+        other network are rejected with 403 Forbidden.
 
-        - The request must originate from a **LaunchPoint+ workspace gateway**. Requests
-          from any other network are rejected with `403 Forbidden`.
-        - The bearer token must be issued for this API, carrying the `srt_public_api`
-          scope. A session token is rejected with `403 Forbidden`.
+        Each validation step may carry attachments in either of two shapes. Inline
+        attachments supply `name`, `value`, `contentType` and `contentEncoding: base64`,
+        and the decoded payload must not exceed 5 MiB (5242880 bytes). Referenced
+        attachments supply the `id` and `secureHash` returned by `POST /v1/attachments`,
+        must belong to you, and are the better choice for anything larger than a small
+        screenshot.
 
-        ## Attachments
-
-        Each validation step may carry attachments in either of two shapes:
-
-        - **Inline** — `name`, `value`, `contentType` and `contentEncoding: base64`. The
-          decoded payload must not exceed 5 MiB (5242880 bytes).
-        - **Reference** — `id` and `secureHash` returned by `POST /v1/attachments`. The
-          referenced attachment must belong to you, otherwise the request is rejected
-          with `403 Forbidden`. Prefer this shape for anything larger than a small
-          screenshot.
-
-        ## Not supported in v1
-
-        The following are accepted by the in-app submission path but are deliberately
-        **not** part of this API and are ignored if sent:
-
-        - `suspectedVulnerabilityId` — a submission cannot be linked to a suspected
-          vulnerability.
-        - A submit-time conversation message — no message can be attached to the
-          submission.
-        - `sprintId` — a submission cannot be attributed to a sprint.
-        - `toolUsed` — the tool that found the vulnerability cannot be recorded.
-        - `secretGistUrl` — a secret gist cannot be attached.
-        - `extension.device` — browser-extension device metadata is always sent as null.
-        - `url`, `port`, `ipAddress` and `portType` on validation steps — a validation
-          step carries only `detail` and `attachments`.
+        `suspectedVulnerabilityId`, `sprintId`, `toolUsed`, `secretGistUrl`,
+        `extension.device`, a submit-time conversation message, and `url`, `port`,
+        `ipAddress` and `portType` on validation steps are not part of this API and are
+        ignored if sent.
       requestBody:
         required: true
         content:
@@ -208,21 +173,20 @@ paths:
       summary: Upload an attachment
       tags:
         - Attachments
-      description: |
+      description: >
         Uploads a single evidence file and returns its `id` and `secureHash`, which a
         validation step of `POST /v1/vulnerabilities` can reference instead of inlining
-        base64. The attachment belongs to the researcher who owns the bearer token and
-        can only be referenced by that researcher.
+        base64. The attachment belongs to the researcher who owns the bearer token and can
+        only be referenced by that researcher.
 
-        As with vulnerability submission, the request must originate from a LaunchPoint+
-        workspace gateway and carry a token issued for this API.
+        The request must originate from a LaunchPoint+ workspace gateway.
 
-        The uploaded file must be one of the supported evidence formats — images
-        (`image/png`, `image/jpeg`, `image/tiff`), video (`video/mp4`, `video/webm`,
-        `video/quicktime`, `video/mpeg`, `video/ogg`, `video/avi`), documents
-        (`application/pdf`, Word, Excel, PowerPoint), archives (`application/zip`,
-        `application/x-gzip`, `application/x-tar`) or text (`text/plain`, `text/csv`,
-        `text/rtf`, `text/html`) — and its extension must match its content type.
+        The file must be one of the supported evidence formats, and its extension must
+        match its content type: images (`image/png`, `image/jpeg`, `image/tiff`), video
+        (`video/mp4`, `video/webm`, `video/quicktime`, `video/mpeg`, `video/ogg`,
+        `video/avi`), documents (`application/pdf`, Word, Excel, PowerPoint), archives
+        (`application/zip`, `application/x-gzip`, `application/x-tar`) or text
+        (`text/plain`, `text/csv`, `text/rtf`, `text/html`).
 
         Files may be up to 300 MB. A larger file, an unsupported type, or an extension that
         does not match the content type is rejected with `422 Unprocessable Content`.
@@ -266,7 +230,8 @@ components:
       scheme: bearer
       description: |
         Bearer token issued for the Synack Platform API, carrying the `srt_public_api`
-        scope.
+        scope. Generate one in the SRT portal under your profile image, then API, then
+        Tokens.
   responses:
     Unauthorized:
       description: |
@@ -324,8 +289,7 @@ components:
     NotFound:
       description: |
         The referenced listing does not exist, is not visible to you, or is not currently
-        accepting submissions. Listing visibility is deliberately not distinguished from
-        non-existence.
+        accepting submissions. These cases are not distinguished from one another.
       content:
         application/problem+json:
           schema:
@@ -336,8 +300,8 @@ components:
             detail: listing not found or not accepting submissions
     UnprocessableContent:
       description: |
-        The body parsed but failed validation. `invalidParams` names each offending field
-        using the public camelCase name.
+        The body parsed but failed validation. `invalidParams` names each offending
+        field.
       content:
         application/problem+json:
           schema:
@@ -367,7 +331,7 @@ components:
                 type: https://synack.com/probs/invalid_parameters
                 title: Your parameters did not validate
                 invalidParams:
-                  - name: validationSteps[].attachments[].gcs_file
+                  - name: validationSteps[].attachments[].value
                     reason: attachment login-bypass.png file extension does not match content type
             fileSizeExceeded:
               summary: An inline attachment is too large
@@ -394,8 +358,8 @@ components:
     InternalServerError:
       description: |
         The request was well formed but could not be processed. The cause is logged on the
-        Synack side and deliberately not described here. Retry with backoff; do not modify
-        the request body in response to this status.
+        Synack side and is not described here. Retry with backoff; do not modify the
+        request body in response to this status.
       content:
         application/problem+json:
           schema:
@@ -406,7 +370,9 @@ components:
   schemas:
     Problem:
       type: object
-      description: RFC 7807 problem details object.
+      description: >-
+        Problem details object, as defined by
+        [RFC 9457](https://datatracker.ietf.org/doc/html/rfc9457).
       required:
         - type
         - title
@@ -534,8 +500,9 @@ components:
         validationSteps:
           type: array
           description: |
-            Ordered reproduction steps, each optionally carrying evidence. At most 50
-            attachments across all steps combined, regardless of how they are distributed.
+            Ordered reproduction steps, each optionally carrying evidence. At most 50 steps,
+            at most 25 attachments on any one step, and at most 50 attachments across all
+            steps combined.
           maxItems: 50
           items:
             $ref: '#/components/schemas/ValidationStep'
@@ -552,7 +519,7 @@ components:
           description: |
             CVE and CWE identifiers associated with the vulnerability. Duplicates are
             discarded, and the remaining codes must come to no more than 100 characters once
-            joined — which binds well before `maxItems` does, at roughly seven CVE codes.
+            joined, which binds well before `maxItems` does, at roughly seven CVE codes.
           maxItems: 100
           items:
             type: string
@@ -566,7 +533,7 @@ components:
         Use `type: url`, `file`, `app-location` or `other` together with `value`. Use
         `type: ip` together with `address`, `port` and `protocol`.
 
-        Leave `assetsUids` or `credentialsUids` out when none apply — the location is then
+        Leave `assetsUids` or `credentialsUids` out when none apply. The location is then
         recorded as not applicable for that side.
       required:
         - type
@@ -656,7 +623,7 @@ components:
     ValidationStep:
       type: object
       description: |
-        One reproduction step. Only `detail` and `attachments` are supported in v1 — the
+        One reproduction step. Only `detail` and `attachments` are supported; the
         `url`, `port`, `ipAddress` and `portType` fields of the in-app submission form are
         not part of this API.
       required:
@@ -870,12 +837,14 @@ components:
         createdAt:
           type: string
           format: date-time
-          description: RFC 3339 submission timestamp.
+          description: Submission timestamp, UTC with a `Z` offset.
           example: '2026-08-13T14:22:05Z'
         resolvedAt:
           type: string
           format: date-time
-          description: RFC 3339 resolution timestamp. Absent until the vulnerability is resolved.
+          description: >-
+            Resolution timestamp, UTC with a `Z` offset. Absent until the vulnerability is
+            resolved.
           example: '2026-08-14T09:03:11Z'
       example:
         id: 918273
@@ -939,7 +908,9 @@ components:
         url:
           type: string
           format: uri
-          description: Signed download URL, valid for two hours.
+          description: >-
+            Signed download URL, valid for two hours from the response. Request the
+            attachment again rather than storing the URL.
           example: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
       example:
         id: 8412773
@@ -950,8 +921,8 @@ components:
         url: https://storage.googleapis.com/synack-attachments/8412773/login-bypass.png?X-Goog-Expires=7200
     Metadata:
       type: object
-      description: |
-        Reserved for response metadata such as pagination. Always an empty object for these
-        operations.
+      description: >-
+        Response envelope metadata. Carries pagination or batch detail on collection
+        endpoints, and is empty for both operations in this API.
       additionalProperties: true
       example: {}
