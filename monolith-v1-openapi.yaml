@@ -75,48 +75,99 @@ components:
           type: string
           description: The reason why the parameter is invalid
 
+    Errors:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error'
+
+    Error:
+      type: object
+      required:
+        - key
+        - title
+        - status
+      properties:
+        key:
+          type: string
+          description: Machine-readable kind of the error
+          example: invalid_parameter
+        title:
+          type: string
+          example: Invalid parameter
+        status:
+          type: integer
+          description: HTTP status of the response
+          example: 400
+        detail:
+          type: string
+          description: What went wrong, naming the parameter for a validation error
+          example: name is required
+
     Assessment:
       type: object
       required:
-        - uid
+        - id
         - name
-        - createdAt
-        - type
-        - testCounts
-        - vulnerabilityCount
+        - codename
+        - category
+        - active
+        - created_at
+        - tag_ids
+        - authentication_self_registration_enabled
       properties:
-        uid:
+        id:
           type: string
-          example: 'assessmentuid921'
+          description: ID of the assessment
+          example: foobar-123
         name:
           type: string
-          example: 'My Security Assessment'
+          example: Customer portal
+        codename:
+          type: string
+          example: ACMEALPHA
         description:
           type: string
-        createdAt:
+          nullable: true
+        details:
+          type: string
+          nullable: true
+        category:
+          type: string
+          description: Type of the assessment
+          example: Web Application
+        active:
+          type: boolean
+          description: Whether the assessment is open for testing
+        rules:
+          type: string
+          nullable: true
+          description: Rules of engagement of the assessment
+        updates:
+          type: array
+          description: Updates posted to the researchers
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+              created_at:
+                type: integer
+                description: Unix timestamp of the update
+        created_at:
           type: string
           format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-        type:
-          type: string
-          enum: [web, host, api, mobile]
-          example: 'Web'
-        testCounts:
-          $ref: '#/components/schemas/TestCounts'
-        vulnerabilityCount:
-          type: integer
-          minimum: 0
-          example: 13
-        tags:
+        tag_ids:
           type: array
           items:
-            $ref: '#/components/schemas/Tag'
-        ownerContacts:
-          type: array
-          items:
-            $ref: '#/components/schemas/OwnerContact'
+            type: integer
+        authentication_self_registration_enabled:
+          type: boolean
+          description: Whether researchers may register their own accounts for authenticated testing
 
     TestCounts:
       type: object
@@ -397,17 +448,129 @@ components:
 
     Test:
       type: object
+      required:
+        - id
+        - type
+        - status
+        - draft_status
+        - planned_start_date
+        - planned_end_date
+        - actual_start_date
+        - actual_end_date
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID of the test
+        type:
+          type: string
+          description: Name of the test plan
+          example: Synack14
+        status:
+          type: string
+          enum: [planned, active, ended]
+          description: Whether the test has started and ended
+        draft_status:
+          type: string
+          enum: [draft, in_admin_review, in_synack_review, needs_more_info, completed]
+          description: Review status of the test, completed once the test is approved
+        planned_start_date:
+          type: string
+          format: date-time
+        planned_end_date:
+          type: string
+          format: date-time
+        actual_start_date:
+          type: string
+          format: date-time
+          nullable: true
+        actual_end_date:
+          type: string
+          format: date-time
+          nullable: true
+
+    TestPlan:
+      type: object
+      required:
+        - name
       properties:
         name:
           type: string
-        testPlan:
+          enum: [Synack365, Synack90, Synack14, SynackAPIPentest, SynackST, SynackST+, Sara Pentest, Sara Pentest+]
+          description: Name of the test plan, accepted as test_plan when creating a test and returned as type on a test
+          example: Synack14
+
+    OneTimeOutageWindow:
+      type: object
+      description: A single pause in testing
+      required:
+        - type
+        - start_date
+        - end_date
+      properties:
+        type:
           type: string
-          enum: [Synack365, Synack90, Synack14]
-        testObjective:
-          type: string
-        createdAt:
+          enum: [one_time]
+        start_date:
           type: string
           format: date-time
+          description: When the pause begins, at least 5 minutes in the future
+          example: '2030-01-10T22:00:00-05:00'
+        end_date:
+          type: string
+          format: date-time
+          description: When the pause ends, after start_date
+          example: '2030-01-11T02:00:00-05:00'
+
+    RecurringOutageWindow:
+      type: object
+      description: A pause in testing that repeats from start_time to end_time on each of its weekdays between first_day and last_day. The first pause must begin at least 5 minutes in the future and a second pause must begin by last_day; a single pause is a one_time window.
+      required:
+        - type
+        - weekdays
+        - start_time
+        - end_time
+        - first_day
+        - last_day
+      properties:
+        type:
+          type: string
+          enum: [recurring]
+        weekdays:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Days of the week a pause begins on, each at most once
+          items:
+            type: string
+            enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+          example: [monday, tuesday, wednesday, thursday, friday]
+        start_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Clock time each pause begins, as HH:MM
+          example: '22:00'
+        end_time:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Clock time each pause ends, as HH:MM. A time at or before start_time ends the pause on the following day.
+          example: '02:00'
+        utc_offset:
+          type: string
+          pattern: '^[+-](0\d|1[0-4]):[0-5]\d$'
+          default: '+00:00'
+          description: Fixed UTC offset the weekdays, times and days are given in. The schedule keeps this offset for its whole span and does not follow daylight saving changes.
+          example: '-05:00'
+        first_day:
+          type: string
+          format: date
+          description: First day a pause can begin on
+          example: '2030-01-07'
+        last_day:
+          type: string
+          format: date
+          description: Last day a pause can begin on, not before first_day
+          example: '2030-01-21'
 
     Comment:
       type: object
@@ -503,6 +666,97 @@ paths:
         '400':
           description: Bad request
 
+    post:
+      operationId: createAssessment
+      summary: Create an assessment (V1)
+      description: |
+        Create an assessment in one of the assessment groups of the organization of the caller.
+        Assets are referenced by the uid the asset API returns for them, and are in scope unless marked out of scope.
+        Tags are created when no tag of that name exists yet.
+        Requires the permission to create assessments in the group, and assessment creation enabled for the organization.
+      tags:
+        - Assessments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+                - assessment_group_id
+                - assets
+              properties:
+                name:
+                  type: string
+                  minLength: 5
+                  maxLength: 100
+                  description: Name of the assessment
+                  example: Customer portal
+                category:
+                  type: string
+                  enum: [Web Application, Host, API]
+                  description: Type of the assessment. API assessments need API testing enabled for the organization.
+                assessment_group_id:
+                  type: integer
+                  description: ID of the assessment group to create the assessment in
+                  example: 123
+                assets:
+                  type: array
+                  minItems: 1
+                  description: Assets to test
+                  items:
+                    type: object
+                    required:
+                      - uid
+                    properties:
+                      uid:
+                        type: string
+                        description: UID of the asset, as returned by the asset API
+                        example: asset-uid-123
+                      scope:
+                        type: string
+                        enum: [in, out]
+                        default: in
+                        description: Whether the asset is in or out of scope
+                description:
+                  type: string
+                  description: Description of the assessment
+                authentication_self_registration_enabled:
+                  type: boolean
+                  default: false
+                  description: Whether researchers may register their own accounts for authenticated testing
+                tag_names:
+                  type: array
+                  items:
+                    type: string
+                  description: Names of the tags to put on the assessment
+                  example: [production]
+      responses:
+        '201':
+          description: The created assessment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assessment'
+        '400':
+          description: A parameter is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+        '403':
+          description: The user is not allowed to create assessments in the assessment group
+        '404':
+          description: Assessment creation is not enabled for the organization
+        '422':
+          description: The assessment could not be created, for example because its assets could not be assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+
   /v1/assessments/{id}:
     get:
       operationId: getAssessment
@@ -523,7 +777,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Assessment'
+                allOf:
+                  - $ref: '#/components/schemas/Assessment'
+                  - type: object
+                    properties:
+                      researcher_count:
+                        type: integer
+                        description: Number of researchers with access to the assessment
         '404':
           description: Assessment not found
 
@@ -665,6 +925,118 @@ paths:
               schema:
                 "$ref": "#/components/schemas/errors"
 
+    post:
+      operationId: createTest
+      summary: Create a test on an assessment
+      description: |
+        Create a test on an assessment. The test runs from the start of its planned start date for the duration of its plan,
+        and is submitted for review unless created as a draft. Warning order contacts must be users with access to the organization.
+        Requires the permission to update the assessment, and assessment creation enabled for the organization.
+      tags:
+        - Tests
+      parameters:
+        - name: assessment_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the assessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - test_plan
+                - planned_start_date
+              properties:
+                name:
+                  type: string
+                  description: Name of the test
+                  example: Quarterly penetration test
+                test_plan:
+                  type: string
+                  enum: [Synack365, Synack90, Synack14, SynackAPIPentest, SynackST, SynackST+, Sara Pentest, Sara Pentest+]
+                  description: |
+                    Name of the test plan, one of those the test plans operation returns for the organization.
+                    SynackAPIPentest is for API assessments and every other plan for assessments of the other categories.
+                    Sara Pentest and Sara Pentest+ need SmartScan enabled and an assessment without a gateway.
+                planned_start_date:
+                  type: string
+                  format: date
+                  description: Date the test starts on, at the earliest the next business day
+                  example: '2030-01-07'
+                draft:
+                  type: boolean
+                  default: false
+                  description: Whether to keep the test as a draft instead of submitting it for review
+                test_objective:
+                  type: string
+                  description: Objective of the test
+                known_vulnerabilities:
+                  type: string
+                  description: Vulnerabilities already known on the assets under test
+                smartscan_enabled:
+                  type: boolean
+                  default: true
+                  description: Whether SmartScan runs for the duration of the test, always the case on Sara Pentest and Sara Pentest+
+                roes:
+                  type: array
+                  description: Rules of engagement of the test
+                  items:
+                    type: object
+                    required:
+                      - description
+                    properties:
+                      description:
+                        type: string
+                        example: No testing of the payment provider
+                warning_order_contacts:
+                  type: array
+                  maxItems: 30
+                  uniqueItems: true
+                  description: Email addresses of the users to send the warning order to, each a user with access to the organization, listed at most once regardless of letter case
+                  items:
+                    type: string
+                    format: email
+                outage_windows:
+                  type: array
+                  description: Periods during which testing pauses, each one-time or recurring
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/OneTimeOutageWindow'
+                      - $ref: '#/components/schemas/RecurringOutageWindow'
+                    discriminator:
+                      propertyName: type
+                      mapping:
+                        one_time: '#/components/schemas/OneTimeOutageWindow'
+                        recurring: '#/components/schemas/RecurringOutageWindow'
+      responses:
+        '201':
+          description: The created test, with its review status as draft_status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+        '400':
+          description: A parameter is missing or invalid, or the test overlaps with another test on the assessment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+        '403':
+          description: The user is not allowed to create tests on the assessment
+        '404':
+          description: No assessment matched the given ID, or test creation is not enabled for the organization
+        '422':
+          description: The test could not be submitted for review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+
   /v1/assessments/{assessment_id}/tests/{id}/approve:
     post:
       operationId: approveTest
@@ -782,6 +1154,30 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/errors"
+  # V1 API - Test Plans
+  /v1/test_plans:
+    get:
+      operationId: getTestPlans
+      summary: Get the test plans available to the organization
+      description: |
+        Retrieve the test plans the organization of the caller can schedule a test on.
+        The name of a plan is the value accepted as test_plan when creating a test, and returned as type on a test.
+      tags:
+        - Test Plans
+      responses:
+        '200':
+          description: The test plans available to the organization
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestPlan'
+        '403':
+          description: The user is missing sufficient privileges
+        '404':
+          description: Test creation is not enabled for the organization
+
   # V1 API - Vulnerabilities
   /v1/vulnerabilities:
     get:
@@ -1654,6 +2050,8 @@ tags:
     description: Operations related to security assessments
   - name: Tests
     description: Operations related to security tests
+  - name: Test Plans
+    description: Operations related to test plans
   - name: Vulnerabilities
     description: Operations related to security vulnerabilities
   - name: Suspected Vulnerabilities
