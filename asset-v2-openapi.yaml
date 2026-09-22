@@ -111,11 +111,6 @@ paths:
         An asset is blocked when it has an Exploitable Vulnerability, is actively
         discovered from a source, or belongs to a planned or active test. Membership
         in a test that has ended does not block deletion.
-
-
-        This is the customer delete. The privileged DELETE /v2/assets/{assetUid}
-        cascade is a separate operation: it removes an asset together with its
-        relationships and listing associations, and it is not covered by these guards.
       x-mint:
         metadata:
           title: Bulk Delete Assets
