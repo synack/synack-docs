@@ -89,6 +89,71 @@ paths:
             - asset_client_lw
             - asset_boss_lw
 
+  /v2/bulk/assets:delete:
+    post:
+      operationId: bulkDeleteAssets
+      tags:
+        - Assets
+        - cloudaccounts
+        - Hosts
+        - mobileapps
+        - networks
+        - webapps
+      description: >
+        Deletes one or more assets by UID. A single-asset delete is a one-element
+        assetUids list. This is a partial-success operation: a valid request returns
+        200, and every requested asset UID appears in results. Assets with no blocking
+        dependency are deleted, and their Suspected Vulnerabilities are removed with
+        them. Blocked assets are left unchanged and returned with reasons. A request
+        in which every asset is blocked still returns 200 with those reasons.
+
+
+        An asset is blocked when it has an Exploitable Vulnerability, is actively
+        discovered from a source, or belongs to a planned or active test. Membership
+        in a test that has ended does not block deletion.
+
+
+        This is the customer delete. The privileged DELETE /v2/assets/{assetUid}
+        cascade is a separate operation: it removes an asset together with its
+        relationships and listing associations, and it is not covered by these guards.
+      x-mint:
+        metadata:
+          title: Bulk Delete Assets
+      requestBody:
+        description: Organization UID and the asset UIDs to delete.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetBulkDelete"
+            example:
+              organizationUid: "acme"
+              assetUids:
+                - "0123456789abcdef01234567"
+                - "89abcdef0123456701234567"
+      responses:
+        "200":
+          $ref: "#/components/responses/AssetBulkDeleteResponse"
+        "401":
+          $ref: "#/components/responses/401Unauthorized"
+        "403":
+          $ref: "#/components/responses/403Forbidden"
+        "413":
+          $ref: "#/components/responses/413RequestEntityTooLarge"
+        "422":
+          $ref: "#/components/responses/422EntityNotProcessable"
+        "500":
+          $ref: "#/components/responses/500InternalServerError"
+        "503":
+          $ref: "#/components/responses/503ServiceUnavailable"
+      security:
+        - OAuth2:
+            - asset_gw
+            - asset_client_ow
+            - asset_boss_ow
+            - asset_client_lw
+            - asset_boss_lw
+
   /v2/bulk/assets/lifecycle-state:update:
     post:
       operationId: bulkUpdateAssetLifecycleState
@@ -3573,6 +3638,75 @@ components:
         criticality:
           $ref: "#/components/schemas/AssetCriticality"
 
+    AssetBulkDelete:
+      type: object
+      required:
+        - organizationUid
+        - assetUids
+      properties:
+        organizationUid:
+          $ref: "#/components/schemas/OrganizationUID"
+        assetUids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Asset UIDs to delete. A single asset delete is a one-element list.
+          items:
+            $ref: "#/components/schemas/AssetUID"
+      example:
+        organizationUid: "acme"
+        assetUids:
+          - "0123456789abcdef01234567"
+          - "89abcdef0123456701234567"
+
+    AssetDeleteBlockedReason:
+      type: string
+      description: >
+        Machine-readable reason an asset could not be deleted.
+          - `exploitable_vulnerability`: the asset has at least one Exploitable Vulnerability.
+          - `actively_discovered`: the asset is actively discovered from a source (for example cloud enumeration or DNS resolution).
+          - `test_membership`: the asset belongs to a planned or active test. A test that has ended does not block deletion.
+      enum:
+        - exploitable_vulnerability
+        - actively_discovered
+        - test_membership
+
+    AssetDeleteResult:
+      type: object
+      required:
+        - assetUid
+        - deleted
+      properties:
+        assetUid:
+          $ref: "#/components/schemas/AssetUID"
+        deleted:
+          type: boolean
+          description: Whether this asset was deleted as part of the request.
+        reasons:
+          type: array
+          description: Present and non-empty only when deleted is false.
+          items:
+            $ref: "#/components/schemas/AssetDeleteBlockedReason"
+
+    AssetBulkDeleteResult:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          description: One entry for every asset UID in the request, deleted or blocked.
+          items:
+            $ref: "#/components/schemas/AssetDeleteResult"
+      example:
+        results:
+          - assetUid: "0123456789abcdef01234567"
+            deleted: true
+          - assetUid: "89abcdef0123456701234567"
+            deleted: false
+            reasons:
+              - test_membership
+
     DiscoveredAssetsPage:
       type: object
       properties:
@@ -4816,6 +4950,24 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/CriticalityUpdateCount"
+    AssetBulkDeleteResponse:
+      description: >
+        Per-asset outcome of the delete request. Deletable assets are deleted; assets
+        blocked by a dependency are left unchanged and reported with their reasons.
+        A request for a single asset UID reports that one outcome in the same shape.
+        A blocked asset is still a 200 with reasons, not an error status.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AssetBulkDeleteResult"
+          example:
+            results:
+              - assetUid: "0123456789abcdef01234567"
+                deleted: true
+              - assetUid: "89abcdef0123456701234567"
+                deleted: false
+                reasons:
+                  - test_membership
     WHOISResponse:
       description: The whois data of the requested asset.
       content:
