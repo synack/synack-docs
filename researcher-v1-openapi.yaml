@@ -59,7 +59,6 @@ paths:
                 including password hashes.
               recommendedFix: Use a parameterized query for the login lookup.
               cvssVector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
-              source: srt
               vulnerabilityCategory: sql_injection/sql_injection
               exploitableLocations:
                 - type: url
@@ -318,7 +317,6 @@ components:
         - impact
         - recommendedFix
         - cvssVector
-        - source
         - exploitableLocations
         - validationSteps
       properties:
@@ -347,11 +345,6 @@ components:
           description: CVSS v3.0 or v3.1 base vector. The score is calculated from it.
           pattern: ^CVSS:3\.[01]/AV:[NALP]/AC:[LH]/PR:[NLH]/UI:[NR]/S:[UC]/C:[NLH]/I:[NLH]/A:[NLH]$
           example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
-        source:
-          type: string
-          enum:
-            - srt
-            - sara
         vulnerabilityCategory:
           type: string
           description: >
@@ -582,9 +575,6 @@ components:
           type: string
           description: CVSS score, as a decimal string.
           example: '9.8'
-        source:
-          type: string
-          example: srt
         createdAt:
           type: string
           format: date-time
