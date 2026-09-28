@@ -342,8 +342,11 @@ components:
           maxLength: 22000
         cvssVector:
           type: string
-          description: CVSS v3.0 or v3.1 base vector. The score is calculated from it.
-          pattern: ^CVSS:3\.[01]/AV:[NALP]/AC:[LH]/PR:[NLH]/UI:[NR]/S:[UC]/C:[NLH]/I:[NLH]/A:[NLH]$
+          description: >
+            CVSS 3.1 base vector, or a CVSS 4.0 base vector if CVSS 4.0 is enabled for your
+            account. Every base metric is required, and other metrics are ignored. The score is
+            calculated from it.
+          pattern: ^CVSS:(3\.1|4\.0)/
           example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
         vulnerabilityCategory:
           type: string
