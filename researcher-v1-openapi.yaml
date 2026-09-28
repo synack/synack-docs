@@ -145,9 +145,9 @@ paths:
         "401":
           $ref: '#/components/responses/401Unauthorized'
         "403":
-          $ref: '#/components/responses/403Forbidden'
+          $ref: '#/components/responses/403UploadForbidden'
         "422":
-          $ref: '#/components/responses/422UnprocessableContent'
+          $ref: '#/components/responses/422UploadUnprocessableContent'
 
 components:
   securitySchemes:
@@ -207,6 +207,33 @@ components:
                 type: https://synack.com/probs/attachment_not_accessible
                 title: Attachment not accessible
                 detail: The referenced attachment does not exist or does not belong to the authenticated researcher.
+    403UploadForbidden:
+      description: >
+        The request was not sent from a LaunchPoint+ workspace, the token was not issued
+        for this API, or you have not completed ID verification or signed the current terms.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            workspaceConnectionRequired:
+              summary: Not sent from LaunchPoint+
+              value:
+                type: https://synack.com/probs/workspace_connection_required
+                title: LaunchPoint+ connection required
+                detail: Requests to this endpoint must originate from a LaunchPoint+ workspace gateway.
+            forbiddenScope:
+              summary: Token not issued for this API
+              value:
+                type: https://synack.com/probs/forbidden_scope
+                title: Token not valid for this API
+                detail: The supplied token was not issued for the Synack Platform API.
+            researcherNotEligible:
+              summary: Researcher not eligible
+              value:
+                type: https://synack.com/probs/researcher_not_eligible
+                title: Researcher not eligible
+                detail: The researcher must have completed identity verification and signed the current terms.
     404NotFound:
       description: The target does not exist, you do not have access to it, or it is not live.
       content:
@@ -260,6 +287,29 @@ components:
                 type: https://synack.com/probs/archived_vulnerability_category
                 title: Archived vulnerability category
                 detail: The selected vulnerability category has been archived and no longer accepts submissions.
+    422UploadUnprocessableContent:
+      description: No file was sent, or the file is too large or not a supported type.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            missingFile:
+              summary: No file
+              value:
+                type: https://synack.com/probs/missing_required_parameters
+                title: Missing required parameters
+                invalidParams:
+                  - name: file
+                    reason: is required
+            unsupportedFile:
+              summary: Unsupported file
+              value:
+                type: https://synack.com/probs/invalid_parameters
+                title: Your parameters did not validate
+                invalidParams:
+                  - name: gcs_file
+                    reason: file extension does not match content type
     500InternalServerError:
       description: Internal server error.
       content:
@@ -298,7 +348,10 @@ components:
             properties:
               name:
                 type: string
-                description: Name of the field, as sent in the request.
+                description: >
+                  Name of the field that failed. Most match the request field names; some errors
+                  found while saving the submission, and attachment file errors (`gcs_file`), use
+                  internal names.
                 example: cvssVector
               reason:
                 type: string
@@ -339,9 +392,9 @@ components:
         cvssVector:
           type: string
           description: >
-            CVSS 3.1 base vector, or a CVSS 4.0 base vector if CVSS 4.0 is enabled for your
-            account. Every base metric is required, and other metrics are ignored. The score is
-            calculated from it.
+            CVSS 4.0 base vector if CVSS 4.0 is enabled for your account, otherwise a CVSS 3.1
+            base vector. Vectors for any other version, including 3.0, are rejected. Every base
+            metric is required, and other metrics are ignored. The score is calculated from it.
           pattern: ^CVSS:(3\.1|4\.0)/
           example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
         vulnerabilityCategory:
@@ -358,11 +411,13 @@ components:
           maxLength: 255
         exploitableLocations:
           type: array
+          description: At most 100,000 characters in total.
           minItems: 1
           items:
             $ref: '#/components/schemas/ExploitableLocation'
         httpRequests:
           type: array
+          description: At most 100,000 characters in total.
           items:
             $ref: '#/components/schemas/HttpRequest'
         validationSteps:
@@ -411,20 +466,16 @@ components:
             - other
         value:
           type: string
-          maxLength: 4096
           example: https://api.example.com/api/login
         address:
           type: string
           description: IP address.
-          maxLength: 45
           example: 203.0.113.42
         port:
           type: string
-          pattern: ^\d{1,5}$
           example: '8443'
         protocol:
           type: string
-          maxLength: 16
           example: tcp
         assetsUids:
           type: array
@@ -445,15 +496,12 @@ components:
         httpRequest:
           type: string
           description: Raw HTTP request.
-          maxLength: 100000
         vulnParam:
           type: string
           description: Vulnerable parameter.
-          maxLength: 1024
           example: username
         attackPayload:
           type: string
-          maxLength: 100000
           example: "' OR 1=1 -- "
 
     ValidationStep:
@@ -463,8 +511,7 @@ components:
       properties:
         detail:
           type: string
-          minLength: 1
-          maxLength: 21000
+          minLength: 5
           example: Send the request above and observe a 200 response with an admin session cookie.
         attachments:
           type: array
