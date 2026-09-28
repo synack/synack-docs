@@ -91,8 +91,6 @@ paths:
                 properties:
                   vulnerability:
                     $ref: '#/components/schemas/Vulnerability'
-                  metadata:
-                    $ref: '#/components/schemas/Metadata'
         "401":
           $ref: '#/components/responses/401Unauthorized'
         "403":
@@ -144,8 +142,6 @@ paths:
                 properties:
                   attachment:
                     $ref: '#/components/schemas/Attachment'
-                  metadata:
-                    $ref: '#/components/schemas/Metadata'
         "401":
           $ref: '#/components/responses/401Unauthorized'
         "403":
@@ -613,8 +609,3 @@ components:
           type: string
           format: uri
           description: Download URL. Expires after two hours.
-
-    Metadata:
-      type: object
-      description: Always empty.
-      example: {}
