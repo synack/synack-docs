@@ -392,10 +392,9 @@ components:
         cvssVector:
           type: string
           description: >
-            CVSS 4.0 base vector if CVSS 4.0 is enabled for your account, otherwise a CVSS 3.1
-            base vector. Vectors for any other version, including 3.0, are rejected. Every base
-            metric is required, and other metrics are ignored. The score is calculated from it.
-          pattern: ^CVSS:(3\.1|4\.0)/
+            CVSS 3.0, 3.1 or 4.0 base vector. Every base metric is required. The CVSS version
+            and score are calculated from it.
+          pattern: ^CVSS:(3\.[01]|4\.0)/
           example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
         vulnerabilityCategory:
           type: string
