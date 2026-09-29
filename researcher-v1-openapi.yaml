@@ -131,11 +131,16 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: >
-                    The file to upload. Its extension must match its content type.
-                    Supported types are PNG, JPEG, TIFF, MP4, WebM, QuickTime, MPEG, Ogg,
-                    AVI, PDF, Word, Excel, PowerPoint, ZIP, gzip, tar, plain text, CSV,
-                    RTF and HTML.
+                  description: |
+                    The file to upload. Its extension must match its content. Accepted files:
+
+                    | Type | Extensions |
+                    |---|---|
+                    | Image | `.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff` |
+                    | Video | `.mp4`, `.m4v`, `.mov`, `.webm`, `.mpg`, `.mpeg`, `.avi` |
+                    | Document | `.pdf`, `.docx`, `.xls`, `.xlsx`, `.ppt` |
+                    | Text | `.txt`, `.csv`, `.html`, `.htm` |
+                    | Archive | `.zip`, `.tar` |
       responses:
         "201":
           description: The attachment was uploaded.
