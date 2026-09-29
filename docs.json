@@ -70,8 +70,8 @@
     ]
   },
   "logo": {
-    "light": "logo/synack_light.svg",
-    "dark": "logo/synack_dark.svg"
+    "light": "/logo/synack_light.svg",
+    "dark": "/logo/synack_dark.svg"
   },
   "contextual": {
     "options": [
