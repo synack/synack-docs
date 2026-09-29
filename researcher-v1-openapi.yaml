@@ -1,13 +1,19 @@
 openapi: 3.1.0
 info:
-  title: Synack Platform API
+  title: Synack Researcher API
   version: 1.0.0
   description: |
     API for Synack Red Team researchers to submit vulnerabilities and upload evidence.
-    Every operation acts on behalf of the researcher who owns the bearer token.
+    Requests must be sent from a LaunchPoint+ workspace.
 
-    Requests must be sent from a LaunchPoint+ workspace. Requests from any other network
-    are rejected with `403 Forbidden`, even when the token is valid.
+    To submit a vulnerability:
+
+    1. Upload each evidence file with `POST /v1/attachments`, which accepts files up to
+       300 MB, and keep the returned `id` and `secureHash`. Files up to 5 MB can instead
+       be sent inline, base64-encoded, in the submission itself.
+    2. Submit the vulnerability with `POST /v1/vulnerabilities`, listing the attachments
+       in its validation steps. At least one validation step must include an attachment,
+       and a submission can include at most 50 attachments.
 
     Errors are returned as `application/problem+json`
     ([RFC 9457](https://datatracker.ietf.org/doc/html/rfc9457)).
@@ -49,14 +55,13 @@ paths:
             schema:
               $ref: '#/components/schemas/NewVulnerability'
             example:
-              listingId: aardvark-quiet
+              listingId: k3v9x2mq7d
               title: SQL injection in the login API
               description: >-
                 The `username` parameter of POST /api/login is concatenated into a SQL
                 statement without parameterization.
               impact: >-
-                An unauthenticated attacker can read every row of the users table,
-                including password hashes.
+                An unauthenticated attacker can read every row of the users table.
               recommendedFix: Use a parameterized query for the login lookup.
               cvssVector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
               vulnerabilityCategory: sql_injection/sql_injection
@@ -64,7 +69,7 @@ paths:
                 - type: url
                   value: https://api.example.com/api/login
                   assetsUids:
-                    - 9f1c2b3a-6d4e-4f7a-9c21-1d0f2e3a4b5c
+                    - 9f1c2b3a1d0f2e3a4b5c
               httpRequests:
                 - httpRequest: |
                     POST /api/login HTTP/1.1
@@ -110,8 +115,7 @@ paths:
         - Attachments
       description: >
         Uploads an evidence file of up to 300 MB. Reference the returned `id` and
-        `secureHash` from a validation step when submitting a vulnerability. Only the
-        researcher who uploaded an attachment can reference it.
+        `secureHash` from a validation step when submitting a vulnerability.
       x-mint:
         metadata:
           title: Upload Attachment
@@ -174,10 +178,13 @@ components:
             title: Authentication required
             detail: This endpoint requires a bearer token issued for the Synack Platform API.
     403Forbidden:
-      description: >
-        The request was not sent from a LaunchPoint+ workspace, the token was not issued
-        for this API, you have not completed ID verification or signed the current terms,
-        or a referenced attachment is not yours.
+      description: |
+        The request was refused for one of these reasons:
+
+        - It was not sent from a LaunchPoint+ workspace.
+        - The token was not issued for this API.
+        - You have not completed ID verification or signed the current terms.
+        - A referenced attachment does not exist or was not uploaded by you.
       content:
         application/problem+json:
           schema:
@@ -208,9 +215,12 @@ components:
                 title: Attachment not accessible
                 detail: The referenced attachment does not exist or does not belong to the authenticated researcher.
     403UploadForbidden:
-      description: >
-        The request was not sent from a LaunchPoint+ workspace, the token was not issued
-        for this API, or you have not completed ID verification or signed the current terms.
+      description: |
+        The request was refused for one of these reasons:
+
+        - It was not sent from a LaunchPoint+ workspace.
+        - The token was not issued for this API.
+        - You have not completed ID verification or signed the current terms.
       content:
         application/problem+json:
           schema:
@@ -371,22 +381,27 @@ components:
       properties:
         listingId:
           type: string
-          description: Slug of the target.
-          example: aardvark-quiet
+          description: >
+            Slug of the target, as shown in the target's URL in the researcher portal.
+          example: k3v9x2mq7d
         title:
           type: string
+          description: Vulnerability title.
           minLength: 1
           maxLength: 255
         description:
           type: string
+          description: What the vulnerability is and where it occurs. Supports Markdown.
           minLength: 10
           maxLength: 21000
         impact:
           type: string
+          description: What an attacker can achieve by exploiting it. Supports Markdown.
           minLength: 10
           maxLength: 21000
         recommendedFix:
           type: string
+          description: How the customer can remediate it. Supports Markdown.
           minLength: 1
           maxLength: 22000
         cvssVector:
@@ -431,8 +446,7 @@ components:
         collaborations:
           type: array
           description: >
-            Researchers to share the payout with. Each must be eligible for the target, and
-            the percentages must add up to between 0.05 and 0.95.
+            Researchers to share the payout with.
           maxItems: 5
           items:
             $ref: '#/components/schemas/Collaboration'
@@ -510,6 +524,7 @@ components:
       properties:
         detail:
           type: string
+          description: What to do in this step and what to observe. Supports Markdown.
           minLength: 5
           example: Send the request above and observe a 200 response with an admin session cookie.
         attachments:
@@ -539,8 +554,8 @@ components:
       type: object
       title: Inline attachment
       description: >
-        A base64-encoded file of up to 5 MiB. Use `POST /v1/attachments` for larger
-        files. The same file types are supported.
+        A base64-encoded file of up to 5 MB. Use `POST /v1/attachments`
+        for larger files.
       required:
         - name
         - value
@@ -584,15 +599,16 @@ components:
 
     Vulnerability:
       type: object
-      description: Fields with no value are omitted.
+      description: Vulnerability description.
       properties:
         id:
           type: string
+          description: Vulnerability id.
           example: aardvarkquiet-58
         listingId:
           type: string
           description: Slug of the target.
-          example: aardvark-quiet
+          example: k3v9x2mq7d
         title:
           type: string
           example: SQL injection in the login API
@@ -612,6 +628,8 @@ components:
           example: SQL Injection
         state:
           type: string
+          description: >
+            Vulnerability state.
           example: open
         cvssVersion:
           type: string
@@ -654,4 +672,5 @@ components:
         url:
           type: string
           format: uri
-          description: Download URL. Expires after two hours.
+          description: Pre-signed download URL.
+          example: https://storage.googleapis.com/example-bucket/cat.jpeg?X-Goog-Algo

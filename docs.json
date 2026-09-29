@@ -59,7 +59,7 @@
         "icon": "user-secret",
         "groups": [
           {
-            "group": "Platform v1 API",
+            "group": "Researcher API v1",
             "openapi": {
               "source": "researcher-v1-openapi.yaml",
               "directory": "platform"
