@@ -539,7 +539,14 @@ paths:
         metadata:
           title: Get Asset List
       summary: Returns list of assets with aggregated data
-      description: Get Assets List by Organization
+      description: |
+        Get Assets List by Organization. Each item includes `is_deleteable`, a
+        boolean that is false when the asset has an Exploitable Vulnerability, is
+        actively discovered from a source, or belongs to a planned or active test.
+        Membership in a test that has ended does not block deletion. The flag does
+        not reflect whether the caller is authorized to delete. It is omitted from
+        CSV export. Use POST /api/asset/v2/bulk/assets:delete to delete assets for
+        which `is_deleteable` is true.
       operationId: getAssetList
       tags:
         - Assets
@@ -775,7 +782,13 @@ paths:
               enum: [provided, fractalScan, xpanse, cloudEnumeration, fingerprinter]
       responses:
         '200':
-          description: OK
+          description: |
+            Paginated asset list. Each item includes `is_deleteable`, a boolean
+            that is false when the asset has an Exploitable Vulnerability, is
+            actively discovered from a source, or belongs to a planned or active
+            test. Membership in a test that has ended does not block deletion.
+            The flag does not reflect whether the caller is authorized to delete.
+            It is omitted from CSV export.
           content:
             application/json:
               schema:
