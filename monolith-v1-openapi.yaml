@@ -463,6 +463,26 @@ components:
           type: string
           format: date-time
 
+    LoginIpAllowlist:
+      type: object
+      required:
+        - mode
+        - entries
+      properties:
+        mode:
+          type: string
+          enum:
+            - disabled
+            - enforced
+          description: Whether logins from outside the allowlist are refused. Entries are kept while the policy is disabled.
+        entries:
+          type: array
+          maxItems: 1000
+          description: Networks allowed to authenticate. A single host is returned as a bare address, a wider range in CIDR notation.
+          items:
+            type: string
+            example: 198.51.100.0/24
+
     AssessmentGroup:
       type: object
       properties:
@@ -1642,7 +1662,135 @@ paths:
           content: {}
         "404":
           description: No such user
-          content: {}          
+          content: {}
+
+  # V1 API - Login IP Allowlist
+  /v1/login_ip_allowlist:
+    get:
+      operationId: getLoginIpAllowlist
+      summary: Retrieve the login IP allowlist policy
+      description: Retrieve the login IP allowlist policy of your organization. Requires admin privileges.
+      tags:
+        - Login IP Allowlist
+      responses:
+        '200':
+          description: The current login IP allowlist policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginIpAllowlist'
+        '403':
+          description: The requesting party does not have admin privileges
+        '404':
+          description: Login IP allowlist is not enabled for the organization
+    put:
+      operationId: replaceLoginIpAllowlist
+      summary: Replace the login IP allowlist policy
+      description: >-
+        Set the policy to exactly the mode and entries supplied. Entries absent from the request are removed.
+        Every entry accepts an IP address or a CIDR block, and an address without a prefix length is stored as a single host.
+        Enforcement requires at least one entry, and the address the request comes from does not need to be covered.
+        Requires admin privileges.
+      tags:
+        - Login IP Allowlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mode
+                - entries
+              properties:
+                mode:
+                  type: string
+                  enum:
+                    - disabled
+                    - enforced
+                  description: Whether logins from outside the allowlist are refused
+                entries:
+                  type: array
+                  maxItems: 1000
+                  description: The complete set of networks allowed to authenticate
+                  items:
+                    type: string
+              example:
+                mode: enforced
+                entries:
+                  - 198.51.100.0/24
+                  - 203.0.113.10
+      responses:
+        '200':
+          description: The stored login IP allowlist policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginIpAllowlist'
+        '400':
+          description: Mode or entries are missing or invalid, enforcement was requested without entries, or the entry limit was exceeded
+        '403':
+          description: The requesting party does not have admin privileges
+        '404':
+          description: Login IP allowlist is not enabled for the organization
+    patch:
+      operationId: updateLoginIpAllowlist
+      summary: Change part of the login IP allowlist policy
+      description: >-
+        Change part of the policy, leaving everything else as it is. At least one of mode and entries must be supplied.
+        Entries named under add are allowed and entries named under remove are revoked, and both accept an IP address or a CIDR block.
+        Adding an entry that is already present changes nothing, and an entry named under both is kept.
+        Enforcement requires at least one entry, and the address the request comes from does not need to be covered.
+        Requires admin privileges.
+      tags:
+        - Login IP Allowlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                mode:
+                  type: string
+                  enum:
+                    - disabled
+                    - enforced
+                  description: Whether logins from outside the allowlist are refused
+                entries:
+                  type: object
+                  description: Networks to allow and networks to revoke
+                  properties:
+                    add:
+                      type: array
+                      description: Networks to allow
+                      items:
+                        type: string
+                    remove:
+                      type: array
+                      description: Networks to revoke
+                      items:
+                        type: string
+              example:
+                entries:
+                  add:
+                    - 198.51.100.0/24
+                  remove:
+                    - 203.0.113.10
+      responses:
+        '200':
+          description: The stored login IP allowlist policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginIpAllowlist'
+        '400':
+          description: Neither mode nor entries were supplied, an entry is invalid, enforcement was requested without entries, or the entry limit was exceeded
+        '403':
+          description: The requesting party does not have admin privileges
+        '404':
+          description: Login IP allowlist is not enabled for the organization
 
 security:
   - BearerAuth: []
@@ -1672,3 +1820,5 @@ tags:
     description: Operations related to vulnerability statuses
   - name: Listings
     description: Operations related to listings
+  - name: Login IP Allowlist
+    description: Operations related to the organization's login IP allowlist
